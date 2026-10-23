@@ -35,4 +35,17 @@ Les apparitions au défilement utilisent `IntersectionObserver`. Les effets de p
 
 ## Hébergement
 
+### GitHub Pages
+
+Le workflow `.github/workflows/pages.yml` publie le dossier `dist` à chaque push sur `main`. Il vérifie d’abord la syntaxe JavaScript ; aucune compilation ni installation de dépendances n’est nécessaire.
+
+1. Publier le contenu de ce dossier (`achraf-portfolio`), avec `.github`, à la racine du dépôt GitHub.
+2. Dans le dépôt GitHub, ouvrir **Settings → Pages → Build and deployment** et choisir **GitHub Actions** comme source.
+3. Pousser un commit sur `main`, ou lancer **Actions → Deploy portfolio to GitHub Pages → Run workflow**.
+4. Consulter l’URL publiée dans **Settings → Pages** ou dans le résultat du déploiement.
+
+Les liens vers les fichiers CSS, JavaScript et le CV sont relatifs et fonctionnent également sous le chemin d’un dépôt (`https://<utilisateur>.github.io/<depot>/`).
+
+### Sites
+
 Le dossier `dist` peut être servi par tout hébergeur statique. La configuration Sites se trouve dans `.openai/hosting.json`. Le site Sites est créé avec un accès privé ; ses droits d’accès sont gérés séparément du code.

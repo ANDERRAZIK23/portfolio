@@ -27,6 +27,12 @@ Les illustrations d’architecture sont des compositions graphiques explicatives
 
 Les polices Manrope et DM Sans sont chargées depuis Google Fonts. Si elles sont indisponibles, les polices système définies dans la feuille de styles sont utilisées.
 
+## Interactions et animations
+
+L’accueil propose trois domaines interactifs : back-end, full-stack et intelligence artificielle. Chaque bouton met à jour le schéma, ses technologies et son explication. Les visuels des projets ouvrent les mêmes fiches accessibles que leurs liens textuels.
+
+Les apparitions au défilement utilisent `IntersectionObserver`. Les effets de perspective restent réservés aux pointeurs précis. Les mises à jour du défilement et du pointeur passent par `requestAnimationFrame`. Le bouton « Pause animations » arrête les mouvements continus ; la préférence système `prefers-reduced-motion` est prioritaire. Le contenu reste lisible sans JavaScript.
+
 ## Hébergement
 
 Le dossier `dist` peut être servi par tout hébergeur statique. La configuration Sites se trouve dans `.openai/hosting.json`. Le site Sites est créé avec un accès privé ; ses droits d’accès sont gérés séparément du code.

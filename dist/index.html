@@ -17,6 +17,8 @@
   </head>
   <body>
     <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <div class="reading-progress" aria-hidden="true"></div>
+    <button class="motion-toggle" type="button" aria-pressed="false"><span class="motion-indicator" aria-hidden="true">Ⅱ</span><span class="motion-label">Pause animations</span></button>
     <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
       <symbol id="diagonal" viewBox="0 0 24 24"><path d="M6 18 18 6M6 6h12v12"/></symbol>
@@ -47,29 +49,38 @@
           <div class="hero-main">
             <div class="hero-copy">
               <p class="eyebrow light"><span class="status-dot"></span> INGÉNIEUR LOGICIEL · CASABLANCA, MAROC</p>
-              <h1 id="hero-title">Achraf<br>Abderrazik<span class="mint">.</span></h1>
-              <p class="hero-tagline">Des architectures solides.<br>Des expériences utiles.</p>
+              <p class="hero-pretitle"><span>&lt;hello&gt;</span> JE SUIS</p>
+              <h1 id="hero-title">Achraf<br><span class="hero-surname">Abderrazik</span><span class="hero-period">.</span></h1>
+              <p class="hero-tagline">De la logique.<br>De l’impact. <span>Du caractère.</span></p>
               <p class="hero-description">De Java à React, je transforme les besoins métier en applications sécurisées, connectées et pensées pour leurs utilisateurs.</p>
               <div class="hero-actions">
                 <a class="button button-mint" href="#projets">Explorer mes projets <svg class="icon"><use href="#arrow"/></svg></a>
                 <a class="download-link" href="./assets/CV-Achraf-Abderrazik.pdf" download>Télécharger mon CV <svg class="icon"><use href="#download"/></svg></a>
               </div>
             </div>
-            <div class="architecture" role="img" aria-label="Illustration d’une architecture connectant une interface React, des API Spring Boot et Kafka">
-              <div class="art-grid"></div><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-              <span class="art-cross cross-one">+</span><span class="art-cross cross-two">+</span>
-              <svg class="connections" viewBox="0 0 500 480" fill="none"><path d="M250 235V88H365M250 235H70V340H145M250 235H430V335H340M250 235V410"/><circle cx="250" cy="235" r="7"/><circle cx="365" cy="88" r="4"/><circle cx="145" cy="340" r="4"/><circle cx="340" cy="335" r="4"/></svg>
-              <div class="architecture-core"><div class="core-top"><span class="tiny-dot"></span> SOFTWARE ENGINEERING</div><svg class="core-icon icon"><use href="#layers"/></svg><span class="core-name">Bâtir. Connecter.<br><strong>Faire fonctionner.</strong></span><span class="core-bottom">&lt; idée /&gt; → &lt; solution /&gt;</span></div>
-              <div class="art-node node-react"><span class="node-symbol react-symbol">⚛</span><div><small>INTERFACE</small><strong>React</strong></div></div>
-              <div class="art-node node-spring"><span class="node-symbol spring-symbol"><svg class="icon"><use href="#code"/></svg></span><div><small>BACK-END</small><strong>Spring Boot</strong></div></div>
-              <div class="art-node node-kafka"><span class="node-symbol kafka-symbol"><svg class="icon"><use href="#layers"/></svg></span><div><small>ÉVÉNEMENTS</small><strong>Kafka</strong></div></div>
-              <div class="art-caption"><span class="status-dot"></span> Du besoin métier à l’architecture.</div>
-              <span class="art-index">FIG. 01 / CONNECTED BY DESIGN</span>
+            <div class="architecture" data-mode="backend">
+              <div class="stage-heading"><span class="stage-label">LE CODE PREND VIE</span><span class="stage-counter" aria-hidden="true">01 — 03</span></div>
+              <div class="architecture-stage" data-tilt>
+                <div class="art-grid" aria-hidden="true"></div><div class="stage-glow" aria-hidden="true"></div>
+                <div class="orbit orbit-one" aria-hidden="true"></div><div class="orbit orbit-two" aria-hidden="true"></div>
+                <div class="orbital-dot" aria-hidden="true"></div>
+                <span class="art-cross cross-one" aria-hidden="true">+</span><span class="art-cross cross-two" aria-hidden="true">+</span>
+                <svg class="connections" viewBox="0 0 500 480" fill="none" aria-hidden="true"><path d="M250 235V88H365M250 235H70V340H145M250 235H430V335H340M250 235V410"/><circle cx="250" cy="235" r="7"/><circle cx="365" cy="88" r="4"/><circle cx="145" cy="340" r="4"/><circle cx="340" cy="335" r="4"/></svg>
+                <div class="architecture-core"><div class="core-top"><span class="tiny-dot"></span><span id="stage-domain">ARCHITECTURES DISTRIBUÉES</span></div><span class="core-monogram" aria-hidden="true">a<span>.</span></span><span class="core-name"><span id="stage-title">Des services.</span><br><strong id="stage-emphasis">Une vision.</strong></span><span class="core-bottom">&lt; idée /&gt; → &lt; solution /&gt;</span></div>
+                <div class="art-node node-react"><span class="node-symbol"><svg class="icon" aria-hidden="true"><use href="#code"/></svg></span><div><small id="stage-node-one-label">API</small><strong id="stage-node-one">Spring Boot</strong></div></div>
+                <div class="art-node node-spring"><span class="node-symbol"><svg class="icon" aria-hidden="true"><use href="#layers"/></svg></span><div><small id="stage-node-two-label">ÉVÉNEMENTS</small><strong id="stage-node-two">Kafka</strong></div></div>
+                <div class="art-node node-kafka"><span class="node-symbol"><svg class="icon" aria-hidden="true"><use href="#spark"/></svg></span><div><small id="stage-node-three-label">SÉCURITÉ</small><strong id="stage-node-three">Keycloak</strong></div></div>
+                <span class="stage-coordinate" aria-hidden="true">CASABLANCA / MAROC</span>
+              </div>
+              <div class="stage-controls" role="group" aria-label="Explorer mes domaines"><button type="button" class="stage-option is-active" data-mode="backend" aria-pressed="true"><span>01</span> Back-end</button><button type="button" class="stage-option" data-mode="fullstack" aria-pressed="false"><span>02</span> Full-stack</button><button type="button" class="stage-option" data-mode="ai" aria-pressed="false"><span>03</span> IA</button></div>
+              <p class="stage-caption" id="stage-caption" role="status">Des API sécurisées. Des services qui communiquent.</p>
             </div>
           </div>
           <div class="hero-bottom"><span class="mono">MON TERRAIN DE JEU</span><div class="hero-tech"><span>Java</span><span>Spring Boot</span><span>Microservices</span><span>React</span><span>SAP ABAP</span></div><a class="scroll-link" href="#projets" aria-label="Découvrir les projets">DÉCOUVRIR <span>↓</span></a></div>
         </div>
       </section>
+
+      <div class="creative-ribbon" aria-label="Concevoir, coder, connecter"><div class="ribbon-track" aria-hidden="true"><span>CONCEVOIR <i>✳</i> CODER <i>↗</i> CONNECTER <i>✳</i> CRÉER DE L’IMPACT <i>↗</i></span><span>CONCEVOIR <i>✳</i> CODER <i>↗</i> CONNECTER <i>✳</i> CRÉER DE L’IMPACT <i>↗</i></span></div></div>
 
       <section class="projects section-light" id="projets" aria-labelledby="projects-title">
         <div class="container">
@@ -78,19 +89,19 @@
           <p id="filter-status" class="sr-only" role="status" aria-live="polite">4 projets affichés</p>
           <div class="project-grid">
             <article class="project-card project-featured" data-categories="backend fullstack ai">
-              <div class="featured-visual" aria-hidden="true"><div class="visual-top"><span><i></i> BP ANNEXE</span><span>ARCHITECTURE MÉTIER</span></div><div class="flow"><div class="flow-node"><svg class="icon"><use href="#layers"/></svg><span>Imports métier</span><small>Données & partenaires</small></div><span class="flow-arrow">→</span><div class="flow-node flow-node-main"><svg class="icon"><use href="#code"/></svg><span>Microservices</span><small>Contrôles & traitements</small></div><span class="flow-arrow">→</span><div class="flow-node"><svg class="icon"><use href="#layers"/></svg><span>Reporting</span><small>Annexes réglementaires</small></div></div><div class="visual-bottom"><span><i></i> Spring Boot + Kafka</span><span class="ai-label"><svg class="icon"><use href="#spark"/></svg> Parakletos · Assistant RAG</span></div></div>
+              <div class="featured-visual"><button type="button" class="visual-open" data-project="bcp" aria-label="Explorer le projet BP Annexe"><span aria-hidden="true">EXPLORER ↗</span></button><div class="visual-art" aria-hidden="true"><div class="visual-top"><span><i></i> BP ANNEXE</span><span>ARCHITECTURE MÉTIER</span></div><div class="flow"><div class="flow-node"><svg class="icon"><use href="#layers"/></svg><span>Imports métier</span><small>Données & partenaires</small></div><span class="flow-arrow">→</span><div class="flow-node flow-node-main"><svg class="icon"><use href="#code"/></svg><span>Microservices</span><small>Contrôles & traitements</small></div><span class="flow-arrow">→</span><div class="flow-node"><svg class="icon"><use href="#layers"/></svg><span>Reporting</span><small>Annexes réglementaires</small></div></div><div class="visual-bottom"><span><i></i> Spring Boot + Kafka</span><span class="ai-label"><svg class="icon"><use href="#spark"/></svg> Parakletos · Assistant RAG</span></div></div></div>
               <div class="featured-content"><p class="project-kicker">PROJET DE FIN D’ÉTUDES <span>2026</span></p><h3>BP Annexe</h3><p class="project-subtitle">Le reporting bancaire, connecté.</p><p>Une plateforme de production des annexes réglementaires, du traitement des fichiers métier au suivi des productions, avec un assistant IA intégré.</p><div class="tags"><span>Spring Boot</span><span>React / TypeScript</span><span>Kafka</span><span>Keycloak</span><span>RAG</span></div><button type="button" class="text-link" data-project="bcp">Découvrir le projet <svg class="icon"><use href="#diagonal"/></svg></button></div>
             </article>
             <article class="project-card" data-categories="backend">
-              <div class="project-visual visual-learn" aria-hidden="true"><span class="visual-label">LEARNING, CONNECTED.</span><div class="service-map"><span class="map-top">API Gateway</span><i></i><div><span>Users</span><span>Courses</span><span>Content</span></div><div><span>Enrollment</span><span>Certificate</span></div><small>DISCOVERY · EUREKA</small></div><span class="visual-counter">01 / 03</span></div>
+              <div class="project-visual visual-learn"><button type="button" class="visual-open" data-project="elearn" aria-label="Explorer le projet E-Learn"><span aria-hidden="true">EXPLORER ↗</span></button><div class="visual-art" aria-hidden="true"><span class="visual-label">LEARNING, CONNECTED.</span><div class="service-map"><span class="map-top">API Gateway</span><i></i><div><span>Users</span><span>Courses</span><span>Content</span></div><div><span>Enrollment</span><span>Certificate</span></div><small>DISCOVERY · EUREKA</small></div><span class="visual-counter">01 / 03</span></div></div>
               <div class="card-content"><p class="project-kicker">MICROSERVICES <span>NOV. 2025</span></p><h3>E-Learn <svg class="project-title-icon icon"><use href="#layers"/></svg></h3><p>Sept services pour apprendre, gérer les inscriptions et générer des certificats PDF avec QR code.</p><div class="tags"><span>Java 17</span><span>Spring Cloud</span><span>JWT</span></div><button type="button" class="text-link" data-project="elearn">Explorer l’architecture <svg class="icon"><use href="#diagonal"/></svg></button></div>
             </article>
             <article class="project-card" data-categories="backend fullstack">
-              <div class="project-visual visual-care" aria-hidden="true"><span class="visual-label">CARE, SIMPLIFIED.</span><div class="care-art"><span class="medical-cross">+</span><div class="care-lines"><span>Patients</span><span>Rendez-vous</span><span>Ordonnances</span></div><svg viewBox="0 0 300 60"><path d="M0 32h70l12-15 18 33 20-45 23 42 14-15h143"/></svg></div><span class="visual-counter">02 / 03</span></div>
+              <div class="project-visual visual-care"><button type="button" class="visual-open" data-project="carelink" aria-label="Explorer le projet CareLink"><span aria-hidden="true">EXPLORER ↗</span></button><div class="visual-art" aria-hidden="true"><span class="visual-label">CARE, SIMPLIFIED.</span><div class="care-art"><span class="medical-cross">+</span><div class="care-lines"><span>Patients</span><span>Rendez-vous</span><span>Ordonnances</span></div><svg viewBox="0 0 300 60"><path d="M0 32h70l12-15 18 33 20-45 23 42 14-15h143"/></svg></div><span class="visual-counter">02 / 03</span></div></div>
               <div class="card-content"><p class="project-kicker">APPLICATION FULL-STACK <span>2025</span></p><h3>CareLink <svg class="project-title-icon icon"><use href="#code"/></svg></h3><p>La gestion d’un cabinet médical : patients, médecins, rendez-vous et ordonnances dans une application sécurisée.</p><div class="tags"><span>Spring Boot</span><span>Angular</span><span>MySQL</span></div><button type="button" class="text-link" data-project="carelink">Découvrir l’application <svg class="icon"><use href="#diagonal"/></svg></button></div>
             </article>
             <article class="project-card" data-categories="ai">
-              <div class="project-visual visual-nutrition" aria-hidden="true"><span class="visual-label">FROM VISION TO INSIGHT.</span><div class="nutrition-art"><div class="scan-frame"><svg class="icon"><use href="#spark"/></svg><span>Repas</span></div><span class="nutrition-arrow">→</span><div class="nutrition-result"><span>CNN + RAG</span><i></i><small>Analyse nutritionnelle</small></div></div><span class="visual-counter">03 / 03</span></div>
+              <div class="project-visual visual-nutrition"><button type="button" class="visual-open" data-project="nutrition" aria-label="Explorer le projet Control Your Life"><span aria-hidden="true">EXPLORER ↗</span></button><div class="visual-art" aria-hidden="true"><span class="visual-label">FROM VISION TO INSIGHT.</span><div class="nutrition-art"><div class="scan-frame"><svg class="icon"><use href="#spark"/></svg><span>Repas</span></div><span class="nutrition-arrow">→</span><div class="nutrition-result"><span>CNN + RAG</span><i></i><small>Analyse nutritionnelle</small></div></div><span class="visual-counter">03 / 03</span></div></div>
               <div class="card-content"><p class="project-kicker">INTELLIGENCE ARTIFICIELLE <span>2026</span></p><h3>Control Your Life <svg class="project-title-icon icon"><use href="#spark"/></svg></h3><p>Un assistant qui identifie les repas et combine vision par ordinateur et recherche documentaire pour analyser leur qualité nutritionnelle.</p><div class="tags"><span>CNN</span><span>RAG</span><span>IA nutritionnelle</span></div><button type="button" class="text-link" data-project="nutrition">Comprendre l’approche <svg class="icon"><use href="#diagonal"/></svg></button></div>
             </article>
           </div>

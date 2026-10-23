@@ -101,7 +101,11 @@ filters.forEach(button => {
     cards.forEach(card => {
       const visible = filter === 'all' || card.dataset.categories.split(' ').includes(filter);
       card.hidden = !visible;
-      if (visible) visibleCount += 1;
+      if (visible) {
+        visibleCount += 1;
+        card.classList.remove('reveal-pending');
+        card.classList.add('is-revealed');
+      }
     });
     filterStatus.textContent = `${visibleCount} projet${visibleCount > 1 ? 's' : ''} affiché${visibleCount > 1 ? 's' : ''}`;
   });
@@ -164,3 +168,166 @@ dialog.addEventListener('close', () => {
 });
 
 document.querySelector('#year').textContent = String(new Date().getFullYear());
+
+// Motion is optional, and system accessibility preferences take priority.
+const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+const motionToggle = document.querySelector('.motion-toggle');
+let animationsPaused = false;
+
+function motionIsReduced() {
+  return animationsPaused || motionPreference.matches;
+}
+
+function updateMotion() {
+  const reduced = motionIsReduced();
+  document.body.dataset.motion = reduced ? 'reduced' : 'full';
+  document.documentElement.dataset.motion = document.body.dataset.motion;
+  motionToggle.setAttribute('aria-pressed', String(reduced));
+  motionToggle.disabled = motionPreference.matches;
+  motionToggle.querySelector('.motion-label').textContent = motionPreference.matches
+    ? 'Animations réduites'
+    : animationsPaused ? 'Reprendre les animations' : 'Pause animations';
+  motionToggle.querySelector('.motion-indicator').textContent = reduced ? '▷' : 'Ⅱ';
+}
+
+motionToggle.addEventListener('click', () => {
+  animationsPaused = !animationsPaused;
+  updateMotion();
+});
+motionPreference.addEventListener('change', updateMotion);
+updateMotion();
+
+const stageModes = {
+  backend: {
+    domain: 'ARCHITECTURES DISTRIBUÉES',
+    title: 'Des services.', emphasis: 'Une vision.',
+    nodes: [['API', 'Spring Boot'], ['ÉVÉNEMENTS', 'Kafka'], ['SÉCURITÉ', 'Keycloak']],
+    caption: 'Des API sécurisées. Des services qui communiquent.',
+    counter: '01 — 03'
+  },
+  fullstack: {
+    domain: 'DE LA DONNÉE À L’INTERFACE',
+    title: 'Une interface.', emphasis: 'Tout un système.',
+    nodes: [['INTERFACE', 'React'], ['BACK-END', 'Spring Boot'], ['DONNÉES', 'PostgreSQL']],
+    caption: 'Relier le besoin métier à une expérience web utile.',
+    counter: '02 — 03'
+  },
+  ai: {
+    domain: 'INTELLIGENCE ARTIFICIELLE',
+    title: 'Des données.', emphasis: 'Du sens.',
+    nodes: [['VISION', 'CNN'], ['RECHERCHE', 'RAG'], ['LANGAGE', 'LLM']],
+    caption: 'Comprendre une image. Retrouver une information. Répondre.',
+    counter: '03 — 03'
+  }
+};
+const architecture = document.querySelector('.architecture');
+const stageOptions = document.querySelectorAll('.stage-option');
+const stageNodeIds = ['one', 'two', 'three'];
+
+stageOptions.forEach(button => {
+  button.addEventListener('click', () => {
+    if (button.getAttribute('aria-pressed') === 'true') return;
+    const mode = stageModes[button.dataset.mode];
+    architecture.dataset.mode = button.dataset.mode;
+    stageOptions.forEach(option => {
+      const active = option === button;
+      option.setAttribute('aria-pressed', String(active));
+      option.classList.toggle('is-active', active);
+    });
+    document.querySelector('#stage-domain').textContent = mode.domain;
+    document.querySelector('#stage-title').textContent = mode.title;
+    document.querySelector('#stage-emphasis').textContent = mode.emphasis;
+    document.querySelector('#stage-caption').textContent = mode.caption;
+    document.querySelector('.stage-counter').textContent = mode.counter;
+    stageNodeIds.forEach((id, index) => {
+      document.querySelector(`#stage-node-${id}-label`).textContent = mode.nodes[index][0];
+      document.querySelector(`#stage-node-${id}`).textContent = mode.nodes[index][1];
+    });
+    if (!motionIsReduced()) {
+      architecture.querySelector('.core-name').animate(
+        [{ opacity: 0, translate: '0 6px' }, { opacity: 1, translate: '0 0' }],
+        { duration: 300, easing: 'ease-out' }
+      );
+    }
+  });
+});
+
+const revealObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    entry.target.classList.remove('reveal-pending');
+    entry.target.classList.add('is-revealed');
+    revealObserver.unobserve(entry.target);
+  });
+}, { threshold: 0.08 });
+
+document.querySelectorAll('.section-heading, .project-card, .expertise-item, .journey-intro, .timeline-item, .education-grid, .credentials, .contact-top, .contact h2, .contact-bottom').forEach(element => {
+  element.classList.add('reveal-pending');
+  revealObserver.observe(element);
+});
+
+// Keyboard navigation must never land inside an invisible reveal.
+document.addEventListener('focusin', event => {
+  const pending = event.target.closest('.reveal-pending');
+  if (!pending) return;
+  pending.classList.remove('reveal-pending');
+  pending.classList.add('is-revealed');
+  revealObserver.unobserve(pending);
+});
+
+const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+document.querySelectorAll('.project-card, [data-tilt]').forEach(element => {
+  let pointerFrame = 0;
+  let pointerX = 0;
+  let pointerY = 0;
+  element.addEventListener('pointermove', event => {
+    if (motionIsReduced() || !finePointer.matches) return;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    if (pointerFrame) return;
+    pointerFrame = requestAnimationFrame(() => {
+      pointerFrame = 0;
+      const bounds = element.getBoundingClientRect();
+      const x = Math.max(0, Math.min(1, (pointerX - bounds.left) / bounds.width));
+      const y = Math.max(0, Math.min(1, (pointerY - bounds.top) / bounds.height));
+      element.style.setProperty('--tilt-x', `${(0.5 - y) * 4}deg`);
+      element.style.setProperty('--tilt-y', `${(x - 0.5) * 4}deg`);
+    });
+  });
+  element.addEventListener('pointerleave', () => {
+    cancelAnimationFrame(pointerFrame);
+    pointerFrame = 0;
+    element.style.removeProperty('--tilt-x');
+    element.style.removeProperty('--tilt-y');
+  });
+});
+
+const siteHeader = document.querySelector('.site-header');
+const navSections = [...navigation.querySelectorAll('a')].map(link => ({
+  link, section: document.querySelector(link.getAttribute('href'))
+}));
+let scrollFrame = 0;
+
+function updateScrollState() {
+  const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollableHeight > 0 ? Math.max(0, Math.min(1, window.scrollY / scrollableHeight)) : 0;
+  document.documentElement.style.setProperty('--reading-progress', String(progress));
+  siteHeader.classList.toggle('is-scrolled', window.scrollY > 20);
+  const active = navSections.filter(({ section }) => section.getBoundingClientRect().top <= window.innerHeight * 0.4).at(-1);
+  navSections.forEach(({ link }) => {
+    if (active?.link === link) link.setAttribute('aria-current', 'location');
+    else link.removeAttribute('aria-current');
+  });
+}
+
+function scheduleScrollUpdate() {
+  if (scrollFrame) return;
+  scrollFrame = requestAnimationFrame(() => {
+    scrollFrame = 0;
+    updateScrollState();
+  });
+}
+
+window.addEventListener('scroll', scheduleScrollUpdate, { passive: true });
+window.addEventListener('resize', scheduleScrollUpdate);
+updateScrollState();

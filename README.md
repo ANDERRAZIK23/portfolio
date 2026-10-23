@@ -33,6 +33,17 @@ L’accueil propose trois domaines interactifs : back-end, full-stack et intelli
 
 Les apparitions au défilement utilisent `IntersectionObserver`. Les effets de perspective restent réservés aux pointeurs précis. Les mises à jour du défilement et du pointeur passent par `requestAnimationFrame`. Le bouton « Pause animations » arrête les mouvements continus ; la préférence système `prefers-reduced-motion` est prioritaire. Le contenu reste lisible sans JavaScript.
 
+## Administration et statistiques
+
+Le dossier `backend` contient une administration Cloudflare Workers avec connexion Cloudflare Access, statistiques D1 et stockage privé R2 compatible S3. Voir [le guide d’installation](backend/README.md) pour les quotas gratuits, la configuration, les tests et le déploiement.
+
+La collecte est désactivée tant que la balise `portfolio-analytics-endpoint` reste vide dans `dist/index.html`. L’administration n’est pas hébergée par GitHub Pages. Le compte Cloudflare et les ressources doivent être créés avant son activation. Les fichiers envoyés restent privés ; aucune clé de stockage n’est placée dans le navigateur.
+
+```sh
+npm ci --prefix backend
+npm test
+```
+
 ## Hébergement
 
 ### GitHub Pages

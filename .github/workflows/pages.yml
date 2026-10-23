@@ -26,9 +26,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
+      - name: Install backend tooling
+        run: npm ci --prefix backend
       - name: Check JavaScript syntax
         run: npm run check
+      - name: Test analytics and admin security
+        run: npm test
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static site

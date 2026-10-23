@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portfolio-admin",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-23",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "admin.imachraf.tech", "custom_domain": true }],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "SITE_ORIGIN": "https://imachraf.tech",
+    "ADMIN_EMAIL": "REPLACE_WITH_YOUR_LOGIN_EMAIL",
+    "ACCESS_TEAM_DOMAIN": "REPLACE_WITH_YOUR_TEAM.cloudflareaccess.com",
+    "ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUD"
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "portfolio-analytics",
+    "database_id": "00000000-0000-0000-0000-000000000000",
+    "migrations_dir": "migrations"
+  }],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "portfolio-private-files" }],
+  "ratelimits": [{
+    "name": "COLLECT_LIMITER",
+    "namespace_id": "17032301",
+    "simple": { "limit": 30, "period": 60 }
+  }],
+  "triggers": { "crons": ["17 3 * * *"] },
+  "observability": { "enabled": false }
+}

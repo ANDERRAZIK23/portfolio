@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="same-origin">
+    <title>Administration · Achraf Abderrazik</title>
+    <link rel="stylesheet" href="/admin.css">
+    <script src="/admin.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Aller au contenu</a>
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+      <symbol id="icon-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+      <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M5.6 7a7.5 7.5 0 0 1 12.5-1L20 9M4 15l1.9 3A7.5 7.5 0 0 0 18.4 17"/></symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+      <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+      <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+      <symbol id="icon-file" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8Zm0 0v5h5M8 12h8m-8 4h6"/></symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6Zm-4 9 3 3 5-5"/></symbol>
+      <symbol id="icon-exit" viewBox="0 0 24 24"><path d="M9 4H4v16h5m5-13 5 5-5 5m-6-5h15"/></symbol>
+      <symbol id="icon-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m3 10v-3a6 6 0 0 0-3-5"/></symbol>
+      <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 3v18h17M8 16v-4m5 4V7m5 9v-6"/></symbol>
+    </svg>
+
+    <section class="gate" id="session-gate" aria-labelledby="gate-title">
+      <a class="brand" href="https://imachraf.tech"><span class="brand-mark">a<span>.</span></span><span>achraf<span class="brand-domain">.tech</span></span></a>
+      <div class="gate-card">
+        <span class="gate-symbol" id="gate-spinner" aria-hidden="true"></span>
+        <p class="eyebrow">ESPACE PRIVÉ</p>
+        <h1 id="gate-title">Vérification de votre accès</h1>
+        <p id="gate-message" role="status">Connexion à votre espace d’administration…</p>
+        <button class="button button-primary" id="session-retry" type="button" hidden>Réessayer</button>
+        <a class="text-link" id="session-login" href="/cdn-cgi/access/logout" hidden>Se reconnecter <span aria-hidden="true">↗</span></a>
+      </div>
+      <noscript><p class="notice notice-error">Activez JavaScript pour consulter les statistiques et gérer vos fichiers.</p></noscript>
+    </section>
+
+    <div class="app-shell" id="app" hidden>
+      <aside class="sidebar" aria-label="Navigation principale">
+        <a class="brand" href="https://imachraf.tech"><span class="brand-mark">a<span>.</span></span><span>achraf<span class="brand-domain">.tech</span></span></a>
+        <p class="sidebar-caption">VOTRE ESPACE DE TRAVAIL</p>
+        <nav class="primary-nav" aria-label="Administration">
+          <a class="nav-link is-active" href="#analytics" data-view="analytics" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg>Vue d’ensemble<span class="nav-index">01</span></a>
+          <a class="nav-link" href="#files" data-view="files"><svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg>Mes fichiers<span class="nav-index">02</span></a>
+        </nav>
+        <a class="portfolio-link" href="https://imachraf.tech" target="_blank" rel="noopener noreferrer"><span>Voir le portfolio<small>imachraf.tech</small></span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"/></svg></a>
+        <div class="sidebar-bottom">
+          <p class="private-note"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg>Accès administrateur</p>
+          <p class="session-email" id="session-email"></p>
+          <a class="logout-link" href="/cdn-cgi/access/logout"><svg class="icon" aria-hidden="true"><use href="#icon-exit"/></svg>Se déconnecter</a>
+        </div>
+      </aside>
+
+      <main id="main" tabindex="-1">
+        <header class="topbar"><p>Administration <span aria-hidden="true">/</span> <span id="breadcrumb">Vue d’ensemble</span></p><span class="access-badge"><span aria-hidden="true"></span>Espace sécurisé</span></header>
+        <section class="view" id="analytics-view" aria-labelledby="analytics-title">
+          <div class="page-heading">
+            <div><p class="eyebrow">01 / AUDIENCE DU PORTFOLIO</p><h1 id="analytics-title" tabindex="-1">Chaque visite compte<span>.</span></h1><p class="page-description">Suivez l’activité de votre site, en un coup d’œil.</p></div>
+            <div class="heading-actions"><label class="sr-only" for="period">Période des statistiques</label><select id="period"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option></select><button class="button button-secondary icon-button" id="refresh-stats" type="button" aria-label="Actualiser les statistiques"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg></button></div>
+          </div>
+          <p class="notice notice-error" id="stats-error" role="alert" hidden></p>
+          <div class="loading-state" id="stats-loading" role="status"><span class="spinner" aria-hidden="true"></span>Chargement des statistiques…</div>
+          <div id="stats-content" hidden>
+            <div class="metric-grid">
+              <article class="metric-card"><div class="metric-label"><span>Pages vues</span><svg class="icon" aria-hidden="true"><use href="#icon-chart"/></svg></div><p class="metric-value" id="total-views"></p><p class="metric-context" id="period-description"></p></article>
+              <article class="metric-card"><div class="metric-label"><span>Visiteurs / jour cumulés</span><svg class="icon" aria-hidden="true"><use href="#icon-people"/></svg></div><p class="metric-value" id="unique-visitors"></p><p class="metric-context">Un même visiteur peut compter sur plusieurs jours.</p></article>
+              <article class="metric-card metric-accent"><div class="metric-label"><span>Moyenne quotidienne</span><span class="metric-symbol" aria-hidden="true">↗</span></div><p class="metric-value" id="daily-average"></p><p class="metric-context">Pages vues par jour sur la période</p></article>
+            </div>
+            <article class="panel trend-panel" aria-labelledby="trend-title">
+              <div class="panel-heading"><div><p class="eyebrow">L’ACTIVITÉ AU FIL DU TEMPS</p><h2 id="trend-title">Fréquentation</h2></div><span class="chart-legend"><span aria-hidden="true"></span>Pages vues</span></div>
+              <p class="empty-state" id="trend-empty" hidden>Aucune visite enregistrée sur cette période. Les premières visites apparaîtront ici.</p>
+              <div id="trend-content"><div class="chart" id="trend-chart" role="list" aria-label="Pages vues par jour"></div><div class="chart-range"><span id="chart-start"></span><span id="chart-end"></span></div><details class="chart-details"><summary>Consulter les valeurs par jour</summary><div class="table-scroll"><table><caption class="sr-only">Fréquentation quotidienne</caption><thead><tr><th scope="col">Date</th><th scope="col" class="number">Pages vues</th><th scope="col" class="number">Visiteurs</th></tr></thead><tbody id="daily-rows"></tbody></table></div></details></div>
+            </article>
+            <div class="breakdown-grid">
+              <article class="panel breakdown-panel"><div class="panel-heading"><h2>Pays</h2><span class="panel-caption">ORIGINE</span></div><div id="countries-list" class="rank-list"></div></article>
+              <article class="panel breakdown-panel"><div class="panel-heading"><h2>Sources</h2><span class="panel-caption">PROVENANCE</span></div><div id="referrers-list" class="rank-list"></div></article>
+              <article class="panel breakdown-panel"><div class="panel-heading"><h2>Appareils</h2><span class="panel-caption">SUPPORT</span></div><div id="devices-list" class="rank-list"></div></article>
+            </div>
+            <article class="panel pages-panel"><div class="panel-heading"><h2>Pages consultées</h2><span class="panel-caption">PAGES VUES</span></div><div id="pages-list" class="rank-list"></div></article>
+            <p class="data-note">Les statistiques commencent à l’activation du suivi. Les visiteurs sont estimés par jour UTC à partir de l’adresse IP, sans conserver celle-ci. Il ne s’agit pas de personnes uniques sur toute la période. Les données sont conservées pendant 90 jours.</p>
+          </div>
+        </section>
+
+        <section class="view" id="files-view" aria-labelledby="files-title" hidden>
+          <div class="page-heading"><div><p class="eyebrow">02 / VOTRE STOCKAGE PRIVÉ</p><h1 id="files-title" tabindex="-1">Tout, au même endroit<span>.</span></h1><p class="page-description">Déposez, retrouvez et téléchargez vos documents.</p></div><button class="button button-secondary icon-button" id="refresh-files" type="button" aria-label="Actualiser les fichiers"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg></button></div>
+          <div class="files-layout">
+            <section class="panel upload-panel" aria-labelledby="upload-title">
+              <div class="panel-heading"><h2 id="upload-title">Ajouter un fichier</h2><svg class="icon" aria-hidden="true"><use href="#icon-upload"/></svg></div>
+              <form id="upload-form">
+                <div class="drop-zone" id="drop-zone"><svg class="upload-icon icon" aria-hidden="true"><use href="#icon-upload"/></svg><p>Glissez votre fichier ici</p><span class="drop-hint">ou sélectionnez-le sur votre appareil</span><label class="button button-secondary file-picker" for="file-input">Choisir un fichier<input id="file-input" name="file" type="file"></label><p class="file-limit">Un fichier à la fois · 20 Mio maximum</p></div>
+                <div class="selected-file" id="selected-file" hidden><svg class="icon" aria-hidden="true"><use href="#icon-file"/></svg><span><strong id="selected-name"></strong><small id="selected-size"></small></span><button class="text-button" type="button" id="clear-file" aria-label="Retirer le fichier sélectionné">×</button></div>
+                <button class="button button-primary upload-submit" id="upload-button" type="submit" disabled><svg class="icon" aria-hidden="true"><use href="#icon-upload"/></svg>Enregistrer le fichier</button>
+                <p class="upload-feedback" id="upload-feedback" role="status" aria-live="polite"></p>
+              </form>
+              <div class="storage-note"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg><p>Vos fichiers restent privés. Leur téléchargement nécessite un accès administrateur.</p></div>
+            </section>
+            <div class="files-main">
+              <div class="storage-summary"><div><span class="summary-label">FICHIERS CHARGÉS</span><strong id="loaded-count">—</strong></div><div><span class="summary-label">TAILLE CUMULÉE</span><strong id="loaded-size">—</strong></div><p>Résumé des fichiers actuellement chargés dans la liste.</p></div>
+              <section class="panel file-list-panel" aria-labelledby="file-list-title"><div class="panel-heading"><h2 id="file-list-title" tabindex="-1">Mes fichiers</h2><span class="private-tag">PRIVÉ</span></div><p class="notice notice-error" id="files-error" role="alert" hidden></p><div class="loading-state" id="files-loading" role="status" hidden><span class="spinner" aria-hidden="true"></span>Chargement des fichiers…</div><div class="empty-state file-empty" id="files-empty" hidden><svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg><h3>Votre espace est prêt.</h3><p>Ajoutez un premier document pour le retrouver ici.</p></div><ul class="file-list" id="file-list" aria-label="Fichiers privés"></ul><button class="button button-secondary load-more" id="load-more" type="button" hidden>Charger plus de fichiers</button></section>
+            </div>
+          </div>
+        </section>
+        <footer class="page-footer"><span>Achraf Abderrazik <span class="footer-dot">/</span> Administration</span><span>Votre portfolio, côté coulisses.</span></footer>
+      </main>
+    </div>
+    <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description"><form method="dialog"><span class="delete-symbol"><svg class="icon" aria-hidden="true"><use href="#icon-trash"/></svg></span><p class="eyebrow">SUPPRESSION DÉFINITIVE</p><h2 id="delete-title">Supprimer ce fichier ?</h2><p id="delete-description"></p><p class="dialog-warning">Cette action ne peut pas être annulée.</p><p class="notice notice-error" id="delete-error" role="alert" hidden></p><div class="dialog-actions"><button class="button button-secondary" id="cancel-delete" value="cancel" autofocus>Conserver</button><button class="button button-danger" id="confirm-delete" type="button">Supprimer</button></div></form></dialog>
+    <p class="sr-only" id="action-announcement" role="status" aria-live="polite"></p>
+  </body>
+</html>

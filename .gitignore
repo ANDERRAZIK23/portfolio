@@ -2,3 +2,10 @@
 node_modules/
 *.log
 .openai/*.tar.gz
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+backend/wrangler.jsonc
+backend/.dry-run/

@@ -25,7 +25,7 @@ npm run check
 
 Les illustrations d’architecture sont des compositions graphiques explicatives, pas des captures des applications. Les liens de code source proviennent du CV. Les boutons e-mail et téléphone utilisent les applications configurées sur l’appareil du visiteur. Aucun formulaire ne simule un envoi de message.
 
-Les polices Manrope et DM Sans sont chargées depuis Google Fonts. Si elles sont indisponibles, les polices système définies dans la feuille de styles sont utilisées.
+Les polices variables Space Grotesk (titres) et Inter (texte) sont servies localement en WOFF2, préchargées avec `font-display: swap`. Leurs licences OFL sont incluses dans `dist/assets/fonts` et `backend/public/fonts`. Aucune requête Google Fonts n’est nécessaire ; les polices système de la feuille de styles restent disponibles si un fichier ne peut pas être chargé.
 
 ## Interactions et animations
 

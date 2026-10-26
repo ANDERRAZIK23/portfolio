@@ -10,7 +10,7 @@ Le portfolio reste sur GitHub Pages. Ce service Cloudflare héberge une administ
 - La collecte respecte Do Not Track et Global Privacy Control. Les robots courants sont exclus. Les compteurs restent indicatifs : blocages, robots non reconnus, IP partagées et requêtes forgées peuvent influencer les mesures. La limitation de débit atténue les abus ; l’origine CORS ne prouve pas l’authenticité d’une requête extérieure au navigateur.
 - Conservation des statistiques : 90 jours UTC, avec suppression quotidienne planifiée. Aucune mesure rétroactive des anciennes visites.
 
-La collecte est **désactivée** dans le HTML public tant que le backend n’est pas prêt. Il n’y a ni données de démonstration ni mot de passe d’administration dans le code.
+La collecte est configurée dans le HTML public vers `https://admin.imachraf.tech/api/collect`. Pour la désactiver, vider la balise `portfolio-analytics-endpoint` de `dist/index.html`. Il n’y a ni données de démonstration ni mot de passe d’administration dans le code.
 
 ## Offre Cloudflare
 

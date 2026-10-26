@@ -41,7 +41,7 @@ L’administration propose des illustrations CSS en 3D, une recherche par nom et
 
 Pour utiliser l’administration sur cet ordinateur avec un formulaire de connexion et un stockage local distinct, suivre la section « Administration locale sans Cloudflare Access » du guide backend.
 
-La collecte est désactivée tant que la balise `portfolio-analytics-endpoint` reste vide dans `dist/index.html`. L’administration n’est pas hébergée par GitHub Pages. Le compte Cloudflare et les ressources doivent être créés avant son activation. Les fichiers envoyés restent privés ; aucune clé de stockage n’est placée dans le navigateur.
+La collecte utilise `https://admin.imachraf.tech/api/collect`, configuré dans la balise `portfolio-analytics-endpoint` de `dist/index.html`. Vider cette balise désactive le suivi. L’administration est hébergée sur Cloudflare, séparément de GitHub Pages. Les fichiers envoyés restent privés ; aucune clé de stockage n’est placée dans le navigateur.
 
 ```sh
 npm ci --prefix backend

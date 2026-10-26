@@ -35,6 +35,8 @@ Les apparitions au défilement utilisent `IntersectionObserver`. Les effets de p
 
 ## Administration et statistiques
 
+Le raccourci public `https://imachraf.tech/achraf/` redirige vers `https://admin.imachraf.tech/#files`. La connexion Cloudflare Access reste nécessaire pour accéder à l’administration.
+
 Le dossier `backend` contient une administration Cloudflare Workers avec connexion Cloudflare Access, statistiques D1 et stockage privé R2 compatible S3. Voir [le guide d’installation](backend/README.md) pour les quotas gratuits, la configuration, les tests et le déploiement.
 
 L’administration propose des illustrations CSS en 3D, une recherche par nom et quatre tris sur les fichiers chargés. Le bouton « Animations 3D » mémorise la préférence de mouvement ; la réduction des animations du système reste prioritaire. Les effets de perspective suivent le pointeur uniquement sur les appareils adaptés.

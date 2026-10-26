@@ -6,7 +6,9 @@
   "engines": { "node": ">=24" },
   "scripts": {
     "dev": "wrangler dev",
-    "check": "node --check src/index.js && node --check public/admin.js",
+    "dev:local": "wrangler dev --local --config wrangler.local.jsonc",
+    "db:migrate:local": "wrangler d1 migrations apply portfolio-analytics-local --local --config wrangler.local.jsonc",
+    "check": "node --check src/index.js && node --check src/local.js && node --check public/admin.js",
     "build:check": "wrangler deploy --dry-run --config wrangler.example.jsonc --outdir .dry-run",
     "test": "node --test test/*.test.js",
     "deploy": "wrangler deploy",

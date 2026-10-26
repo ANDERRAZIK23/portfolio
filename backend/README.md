@@ -81,12 +81,27 @@ Ajouter éventuellement un lien personnel vers l’administration ; son URL ne c
 
 ## Vérification locale
 
+### Administration locale sans Cloudflare Access
+
+L’entrée de développement `src/local.js` propose un formulaire de connexion avec une session signée de six heures, stockée dans un cookie HttpOnly et SameSite=Strict et accepte uniquement l’origine `http://127.0.0.1:8787`. Elle utilise une base D1 et un bucket R2 locaux, indépendants des fichiers et statistiques de production.
+
+Créer `.dev.vars` dans ce dossier (fichier ignoré par Git) avec `ADMIN_EMAIL`, `LOCAL_ADMIN_PASSWORD` (au moins 24 caractères aléatoires) et `ANALYTICS_SALT` (au moins 32 caractères aléatoires). Ne pas partager ce fichier.
+
+```sh
+npm run db:migrate:local
+npm run dev:local
+```
+
+Ouvrir `http://127.0.0.1:8787`, puis saisir l’adresse et le mot de passe de `.dev.vars` dans le formulaire de connexion. L’entrée de production `src/index.js` continue d’exiger Cloudflare Access ; ces identifiants locaux n’y donnent aucun accès. Utiliser la commande habituelle `npm run deploy` pour la production, jamais la configuration `wrangler.local.jsonc`.
+
+### Contrôles
+
 ```sh
 npm test
 npm run check
 npm run build:check
 ```
 
-Les tests exercent les signatures JWT, les refus d’accès, le stockage, la collecte et la rétention avec des ressources locales. `build:check` assemble le Worker sans le déployer ni créer de ressources. `npm run dev` nécessite votre fichier de configuration local ; la validation Access reste active en développement et n’a aucun mode de contournement.
+Les tests exercent les signatures JWT, les refus d’accès, le stockage, la collecte, la rétention et l’authentification de développement avec des ressources locales. `build:check` assemble le Worker sans le déployer ni créer de ressources. `npm run dev` nécessite votre fichier de configuration local et conserve la validation Access. `npm run dev:local` utilise l’entrée de développement distincte décrite ci-dessus.
 
 Les changements backend nécessitent `npm run deploy` ; le workflow GitHub Pages ne déploie que le dossier `dist` du portfolio. Les fichiers R2 ne sont pas une sauvegarde : conserver une copie des documents importants.

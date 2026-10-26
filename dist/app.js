@@ -172,7 +172,9 @@ document.querySelector('#year').textContent = String(new Date().getFullYear());
 // Motion is optional, and system accessibility preferences take priority.
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 const motionToggle = document.querySelector('.motion-toggle');
+const resetPointerEffects = new Set();
 let animationsPaused = false;
+let stageTransition = null;
 
 function motionIsReduced() {
   return animationsPaused || motionPreference.matches;
@@ -180,6 +182,10 @@ function motionIsReduced() {
 
 function updateMotion() {
   const reduced = motionIsReduced();
+  if (reduced) {
+    resetPointerEffects.forEach(reset => reset());
+    stageTransition?.cancel();
+  }
   document.body.dataset.motion = reduced ? 'reduced' : 'full';
   document.documentElement.dataset.motion = document.body.dataset.motion;
   motionToggle.setAttribute('aria-pressed', String(reduced));
@@ -243,8 +249,9 @@ stageOptions.forEach(button => {
       document.querySelector(`#stage-node-${id}-label`).textContent = mode.nodes[index][0];
       document.querySelector(`#stage-node-${id}`).textContent = mode.nodes[index][1];
     });
+    stageTransition?.cancel();
     if (!motionIsReduced()) {
-      architecture.querySelector('.core-name').animate(
+      stageTransition = architecture.querySelector('.core-name').animate(
         [{ opacity: 0, translate: '0 6px' }, { opacity: 1, translate: '0 0' }],
         { duration: 300, easing: 'ease-out' }
       );
@@ -280,26 +287,42 @@ document.querySelectorAll('.project-card, [data-tilt]').forEach(element => {
   let pointerFrame = 0;
   let pointerX = 0;
   let pointerY = 0;
+  const tiltRange = element.hasAttribute('data-tilt') ? 12 : 5;
+
+  function resetPointer() {
+    cancelAnimationFrame(pointerFrame);
+    pointerFrame = 0;
+    ['--tilt-x', '--tilt-y', '--pointer-x', '--pointer-y'].forEach(property => {
+      element.style.removeProperty(property);
+    });
+  }
+
+  resetPointerEffects.add(resetPointer);
   element.addEventListener('pointermove', event => {
-    if (motionIsReduced() || !finePointer.matches) return;
+    if (motionIsReduced() || !finePointer.matches || event.pointerType === 'touch') return;
     pointerX = event.clientX;
     pointerY = event.clientY;
     if (pointerFrame) return;
     pointerFrame = requestAnimationFrame(() => {
       pointerFrame = 0;
+      if (motionIsReduced() || !finePointer.matches) return;
       const bounds = element.getBoundingClientRect();
+      if (!bounds.width || !bounds.height) return;
       const x = Math.max(0, Math.min(1, (pointerX - bounds.left) / bounds.width));
       const y = Math.max(0, Math.min(1, (pointerY - bounds.top) / bounds.height));
-      element.style.setProperty('--tilt-x', `${(0.5 - y) * 4}deg`);
-      element.style.setProperty('--tilt-y', `${(x - 0.5) * 4}deg`);
+      element.style.setProperty('--tilt-x', `${(0.5 - y) * tiltRange}deg`);
+      element.style.setProperty('--tilt-y', `${(x - 0.5) * tiltRange}deg`);
+      element.style.setProperty('--pointer-x', `${x * 100}%`);
+      element.style.setProperty('--pointer-y', `${y * 100}%`);
     });
   });
-  element.addEventListener('pointerleave', () => {
-    cancelAnimationFrame(pointerFrame);
-    pointerFrame = 0;
-    element.style.removeProperty('--tilt-x');
-    element.style.removeProperty('--tilt-y');
-  });
+  element.addEventListener('pointerleave', resetPointer);
+  element.addEventListener('pointercancel', resetPointer);
+});
+
+finePointer.addEventListener('change', () => resetPointerEffects.forEach(reset => reset()));
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) resetPointerEffects.forEach(reset => reset());
 });
 
 const siteHeader = document.querySelector('.site-header');

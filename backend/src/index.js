@@ -7,7 +7,7 @@ const BOT_AGENT = /bot\b|spider|crawler|headless|slurp|bingpreview|facebookexter
 const jwksByIssuer = new Map();
 const encoder = new TextEncoder();
 
-class HttpError extends Error {
+export class HttpError extends Error {
   constructor(status, message, headers = {}) {
     super(message);
     this.status = status;
@@ -411,8 +411,8 @@ async function files(request, url, env) {
   throw new HttpError(405, 'Use GET to download a file or DELETE to remove it.', { Allow: 'GET, DELETE' });
 }
 
-async function admin(request, url, env) {
-  const session = await authenticate(request, env);
+async function admin(request, url, env, authenticateRequest) {
+  const session = await authenticateRequest(request, env);
   if (url.pathname === '/api/session' && request.method === 'GET') return json(session);
   if (url.pathname === '/api/stats' && request.method === 'GET') return json(await getStats(url, env));
   if (url.pathname === '/api/files' || url.pathname.startsWith('/api/files/')) {
@@ -428,48 +428,52 @@ async function admin(request, url, env) {
   return env.ASSETS.fetch(request);
 }
 
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    const collector = url.pathname === '/api/collect';
-    let origin;
-    let response;
-    try {
+export function createWorker(authenticateRequest = authenticate) {
+  return {
+    async fetch(request, env) {
+      const url = new URL(request.url);
+      const collector = url.pathname === '/api/collect';
+      let origin;
+      let response;
+      try {
+        if (collector) {
+          const site = configuredOrigin(env.SITE_ORIGIN);
+          if (request.headers.get('Origin') === site.origin) origin = site.origin;
+          response = await collect(request, env, site);
+        } else {
+          response = await admin(request, url, env, authenticateRequest);
+        }
+      } catch (error) {
+        if (error instanceof HttpError) {
+          response = json({ error: error.message }, error.status, error.headers);
+        } else {
+          // Do not log request headers, tokens, addresses, or file contents.
+          console.error('The portfolio backend encountered an unexpected error.', error instanceof Error ? error.name : 'UnknownError');
+          response = json({ error: 'The request could not be completed. Please try again.' }, 500);
+        }
+      }
       if (collector) {
-        const site = configuredOrigin(env.SITE_ORIGIN);
-        if (request.headers.get('Origin') === site.origin) origin = site.origin;
-        response = await collect(request, env, site);
-      } else {
-        response = await admin(request, url, env);
+        const headers = new Headers(response.headers);
+        headers.set('Vary', 'Origin');
+        if (origin) {
+          for (const [name, value] of Object.entries(corsHeaders(origin))) headers.set(name, value);
+        }
+        response = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
       }
-    } catch (error) {
-      if (error instanceof HttpError) {
-        response = json({ error: error.message }, error.status, error.headers);
-      } else {
-        // Do not log request headers, tokens, addresses, or file contents.
-        console.error('The portfolio backend encountered an unexpected error.', error instanceof Error ? error.name : 'UnknownError');
-        response = json({ error: 'The request could not be completed. Please try again.' }, 500);
-      }
-    }
-    if (collector) {
-      const headers = new Headers(response.headers);
-      headers.set('Vary', 'Origin');
-      if (origin) {
-        for (const [name, value] of Object.entries(corsHeaders(origin))) headers.set(name, value);
-      }
-      response = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-    }
-    return secureResponse(response);
-  },
+      return secureResponse(response);
+    },
 
-  async scheduled(_controller, env) {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const cutoff = new Date(today.getTime() - 89 * 86_400_000).toISOString().slice(0, 10);
-    const db = database(env);
-    await db.batch([
-      db.prepare('DELETE FROM analytics_visitors WHERE day < ?').bind(cutoff),
-      db.prepare('DELETE FROM analytics_metrics WHERE day < ?').bind(cutoff),
-    ]);
-  },
-};
+    async scheduled(_controller, env) {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const cutoff = new Date(today.getTime() - 89 * 86_400_000).toISOString().slice(0, 10);
+      const db = database(env);
+      await db.batch([
+        db.prepare('DELETE FROM analytics_visitors WHERE day < ?').bind(cutoff),
+        db.prepare('DELETE FROM analytics_metrics WHERE day < ?').bind(cutoff),
+      ]);
+    },
+  };
+}
+
+export default createWorker();

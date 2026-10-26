@@ -7,6 +7,7 @@
   const dayFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const fullDayFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   const uploadDateFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fileNameCollator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
   const $ = (id) => document.getElementById(id);
   const state = { authenticated: false, statsController: null, files: [], cursor: null, filesLoaded: false, filesBusy: false, uploadBusy: false, selectedFile: null, deleteFile: null, deleteBusy: false };
 
@@ -52,6 +53,7 @@
     $('session-gate').hidden = false;
     $('gate-spinner').hidden = true;
     $('gate-title').textContent = 'Reconnectez-vous à votre espace';
+    document.title = 'Connexion · Administration · Achraf Abderrazik';
     $('gate-message').textContent = 'Votre session a expiré ou votre compte n’a pas accès à cette administration.';
     $('session-retry').hidden = false;
     $('session-login').hidden = false;
@@ -88,6 +90,7 @@
     $('analytics-view').hidden = view !== 'analytics';
     $('files-view').hidden = view !== 'files';
     $('breadcrumb').textContent = view === 'files' ? 'Mes fichiers' : 'Vue d’ensemble';
+    document.title = `${view === 'files' ? 'Mes fichiers' : 'Vue d’ensemble'} · Administration · Achraf Abderrazik`;
     document.querySelectorAll('[data-view]').forEach((link) => {
       const active = link.dataset.view === view;
       link.classList.toggle('is-active', active);
@@ -223,8 +226,18 @@
   }
 
   function renderFiles() {
+    const query = normalizeFileName($('file-search').value.trim());
+    const visibleFiles = state.files.filter((file) => normalizeFileName(file.name).includes(query));
+    const comparators = {
+      newest: (first, second) => Date.parse(second.uploaded) - Date.parse(first.uploaded),
+      oldest: (first, second) => Date.parse(first.uploaded) - Date.parse(second.uploaded),
+      name: (first, second) => fileNameCollator.compare(first.name, second.name),
+      size: (first, second) => second.size - first.size,
+    };
+    const compare = comparators[$('file-sort').value];
+    visibleFiles.sort((first, second) => compare(first, second) || fileNameCollator.compare(first.name, second.name) || fileNameCollator.compare(first.key, second.key));
     const fragment = document.createDocumentFragment();
-    for (const file of state.files) {
+    for (const file of visibleFiles) {
       const row = document.createElement('li');
       row.className = 'file-row';
       const symbol = document.createElement('span');
@@ -268,9 +281,23 @@
     $('loaded-size').textContent = formatBytes(state.files.reduce((total, file) => total + file.size, 0));
     $('files-empty').hidden = state.files.length !== 0;
     $('load-more').hidden = !state.cursor;
+    if (!state.files.length) {
+      $('file-results').textContent = 'Aucun fichier chargé.';
+    } else if (!visibleFiles.length) {
+      const loadedLabel = state.files.length === 1 ? 'le fichier chargé' : `les ${numberFormat.format(state.files.length)} fichiers chargés`;
+      $('file-results').textContent = `Aucun résultat parmi ${loadedLabel}.${state.cursor ? ' Chargez la suite pour étendre la recherche.' : ''}`;
+    } else {
+      $('file-results').textContent = `${numberFormat.format(visibleFiles.length)} fichier${visibleFiles.length > 1 ? 's' : ''} affiché${visibleFiles.length > 1 ? 's' : ''} sur ${numberFormat.format(state.files.length)} chargé${state.files.length > 1 ? 's' : ''}.${query && state.cursor ? ' La recherche porte sur les fichiers chargés.' : ''}`;
+    }
+  }
+
+  function normalizeFileName(value) {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
   }
 
   function updateFileControls() {
+    $('file-search').disabled = state.filesBusy;
+    $('file-sort').disabled = state.filesBusy;
     $('refresh-files').disabled = state.filesBusy || state.uploadBusy || state.deleteBusy;
     $('load-more').disabled = state.filesBusy || state.uploadBusy || state.deleteBusy;
     $('upload-button').disabled = !state.selectedFile || state.uploadBusy || state.filesBusy || state.deleteBusy;
@@ -393,12 +420,95 @@
     }
   }
 
+  function initializeMotion() {
+    const storageKey = 'portfolio-admin-motion';
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const button = $('motion-toggle');
+    const resetTilts = [];
+    let preference = null;
+    let motionActive = false;
+    try {
+      preference = localStorage.getItem(storageKey);
+    } catch (error) {
+      console.warn('Impossible de lire la préférence d’animation de l’administration.', error);
+    }
+
+    function updateMotion() {
+      motionActive = !reducedMotion.matches && preference !== 'paused';
+      document.body.dataset.motion = motionActive ? 'active' : 'paused';
+      button.setAttribute('aria-pressed', String(motionActive));
+      button.disabled = reducedMotion.matches;
+      button.title = reducedMotion.matches
+        ? 'Animations désactivées selon les préférences de votre appareil'
+        : motionActive ? 'Mettre les animations en pause' : 'Activer les animations';
+      const label = button.querySelector('[data-motion-label]');
+      if (label) label.textContent = motionActive ? 'Animations actives' : 'Animations en pause';
+      if (!motionActive) resetTilts.forEach((reset) => reset());
+    }
+
+    document.querySelectorAll('[data-tilt]').forEach((element) => {
+      let frame = 0;
+      let pointerX = 0;
+      let pointerY = 0;
+      function reset() {
+        window.cancelAnimationFrame(frame);
+        frame = 0;
+        element.style.setProperty('--tilt-x', '0deg');
+        element.style.setProperty('--tilt-y', '0deg');
+        element.style.setProperty('--parallax-x', '0px');
+        element.style.setProperty('--parallax-y', '0px');
+        element.removeAttribute('data-tilt-active');
+      }
+      resetTilts.push(reset);
+      element.addEventListener('pointermove', (event) => {
+        if (!motionActive || !finePointer.matches || event.pointerType === 'touch') return;
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+        if (frame) return;
+        frame = window.requestAnimationFrame(() => {
+          frame = 0;
+          if (!motionActive || !finePointer.matches || document.hidden) return;
+          const bounds = element.getBoundingClientRect();
+          if (!bounds.width || !bounds.height) return;
+          const x = Math.max(-1, Math.min(1, ((pointerX - bounds.left) / bounds.width - 0.5) * 2));
+          const y = Math.max(-1, Math.min(1, ((pointerY - bounds.top) / bounds.height - 0.5) * 2));
+          element.style.setProperty('--tilt-x', `${(-y * 7).toFixed(2)}deg`);
+          element.style.setProperty('--tilt-y', `${(x * 7).toFixed(2)}deg`);
+          element.style.setProperty('--parallax-x', `${(x * 10).toFixed(2)}px`);
+          element.style.setProperty('--parallax-y', `${(y * 10).toFixed(2)}px`);
+          element.dataset.tiltActive = 'true';
+        });
+      });
+      element.addEventListener('pointerleave', reset);
+      element.addEventListener('pointercancel', reset);
+    });
+
+    button.addEventListener('click', () => {
+      preference = motionActive ? 'paused' : 'active';
+      try {
+        localStorage.setItem(storageKey, preference);
+      } catch (error) {
+        console.warn('Impossible d’enregistrer la préférence d’animation de l’administration.', error);
+      }
+      updateMotion();
+    });
+    reducedMotion.addEventListener('change', updateMotion);
+    finePointer.addEventListener('change', () => resetTilts.forEach((reset) => reset()));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) resetTilts.forEach((reset) => reset());
+    });
+    updateMotion();
+  }
+
   $('session-retry').addEventListener('click', loadSession);
   window.addEventListener('hashchange', () => navigate(true));
   $('period').addEventListener('change', loadStats);
   $('refresh-stats').addEventListener('click', loadStats);
   $('refresh-files').addEventListener('click', () => loadFiles(false));
   $('load-more').addEventListener('click', () => loadFiles(true));
+  $('file-search').addEventListener('input', () => { renderFiles(); updateFileControls(); });
+  $('file-sort').addEventListener('change', () => { renderFiles(); updateFileControls(); });
   $('file-input').addEventListener('change', (event) => selectFile(event.target.files[0] || null));
   $('clear-file').addEventListener('click', clearFile);
   $('upload-form').addEventListener('submit', uploadFile);
@@ -430,5 +540,6 @@
     $('file-input').value = '';
     selectFile(event.dataTransfer.files[0]);
   });
+  initializeMotion();
   loadSession();
 })();

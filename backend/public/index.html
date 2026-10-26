@@ -13,6 +13,7 @@
     <script src="/admin.js" defer></script>
   </head>
   <body>
+    <div class="workspace-atmosphere" aria-hidden="true"><span></span><span></span></div>
     <a class="skip-link" href="#main">Aller au contenu</a>
     <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
@@ -26,6 +27,8 @@
       <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6Zm-4 9 3 3 5-5"/></symbol>
       <symbol id="icon-exit" viewBox="0 0 24 24"><path d="M9 4H4v16h5m5-13 5 5-5 5m-6-5h15"/></symbol>
       <symbol id="icon-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m3 10v-3a6 6 0 0 0-3-5"/></symbol>
+      <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/></symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
       <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 3v18h17M8 16v-4m5 4V7m5 9v-6"/></symbol>
     </svg>
 
@@ -45,12 +48,13 @@
     <div class="app-shell" id="app" hidden>
       <aside class="sidebar" aria-label="Navigation principale">
         <a class="brand" href="https://imachraf.tech"><span class="brand-mark">a<span>.</span></span><span>achraf<span class="brand-domain">.tech</span></span></a>
-        <p class="sidebar-caption">VOTRE ESPACE DE TRAVAIL</p>
+        <div class="workspace-label"><span class="workspace-avatar">A</span><span>Le studio d’Achraf<small>Espace personnel</small></span><span class="workspace-chevron" aria-hidden="true">⌘</span></div><p class="sidebar-caption">EXPLORER L’ESPACE</p>
         <nav class="primary-nav" aria-label="Administration">
           <a class="nav-link is-active" href="#analytics" data-view="analytics" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg>Vue d’ensemble<span class="nav-index">01</span></a>
           <a class="nav-link" href="#files" data-view="files"><svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg>Mes fichiers<span class="nav-index">02</span></a>
         </nav>
         <a class="portfolio-link" href="https://imachraf.tech" target="_blank" rel="noopener noreferrer"><span>Voir le portfolio<small>imachraf.tech</small></span><svg class="icon" aria-hidden="true"><use href="#icon-arrow"/></svg></a>
+        <div class="sidebar-art" aria-hidden="true"><span class="sidebar-orbit"></span><span class="sidebar-crystal"></span><span class="sidebar-art-label">Un peu plus de perspective.</span></div>
         <div class="sidebar-bottom">
           <p class="private-note"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg>Accès administrateur</p>
           <p class="session-email" id="session-email"></p>
@@ -59,12 +63,13 @@
       </aside>
 
       <main id="main" tabindex="-1">
-        <header class="topbar"><p>Administration <span aria-hidden="true">/</span> <span id="breadcrumb">Vue d’ensemble</span></p><span class="access-badge"><span aria-hidden="true"></span>Espace sécurisé</span></header>
+        <header class="topbar"><p>Votre espace <span aria-hidden="true">/</span> <span id="breadcrumb">Vue d’ensemble</span></p><div class="topbar-actions"><button class="motion-toggle" id="motion-toggle" type="button" aria-label="Animations 3D" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#icon-spark"/></svg><span data-motion-label>Animations actives</span></button><span class="access-badge"><span aria-hidden="true"></span>Accès privé</span><span class="profile-avatar" aria-label="Achraf Abderrazik">AA</span></div></header>
         <section class="view" id="analytics-view" aria-labelledby="analytics-title">
-          <div class="page-heading">
-            <div><p class="eyebrow">01 / AUDIENCE DU PORTFOLIO</p><h1 id="analytics-title" tabindex="-1">Chaque visite compte<span>.</span></h1><p class="page-description">Suivez l’activité de votre site, en un coup d’œil.</p></div>
-            <div class="heading-actions"><label class="sr-only" for="period">Période des statistiques</label><select id="period"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option></select><button class="button button-secondary icon-button" id="refresh-stats" type="button" aria-label="Actualiser les statistiques"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg></button></div>
+          <div class="workspace-hero analytics-hero">
+            <div class="hero-copy"><p class="eyebrow"><span class="eyebrow-dot"></span> 01 / VUE D’ENSEMBLE</p><h1 id="analytics-title" tabindex="-1">Une nouvelle<br><span>perspective.</span></h1><p class="page-description">Votre portfolio prend vie. Gardez un œil sur<br class="desktop-break"> les visites, les tendances et les connexions.</p><div class="hero-caption"><span class="caption-line"></span> CHAQUE VISITE RACONTE QUELQUE CHOSE</div></div>
+            <div class="hero-scene analytics-scene" data-tilt aria-hidden="true"><div class="scene-grid"></div><div class="scene-tilt"><div class="scene-orbit orbit-one"></div><div class="scene-orbit orbit-two"></div><div class="scene-platform"></div><div class="dimensional-cube"><div class="cube-face cube-front"><svg class="icon"><use href="#icon-chart"/></svg></div><div class="cube-face cube-back"></div><div class="cube-face cube-right"></div><div class="cube-face cube-left"></div><div class="cube-face cube-top"></div><div class="cube-face cube-bottom"></div></div><div class="scene-satellite satellite-one"><span></span><span></span><span></span><span></span></div><div class="scene-satellite satellite-two"><svg class="icon"><use href="#icon-people"/></svg></div><span class="scene-point point-one"></span><span class="scene-point point-two"></span></div><span class="scene-label">LE PORTFOLIO, SOUS TOUS LES ANGLES</span></div>
           </div>
+          <div class="section-toolbar"><div><span class="section-kicker">VOTRE ACTIVITÉ</span><h2>Les chiffres, en clair.</h2></div><div class="heading-actions"><label class="sr-only" for="period">Période des statistiques</label><select id="period"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option></select><button class="button button-secondary icon-button" id="refresh-stats" type="button" aria-label="Actualiser les statistiques"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg></button></div></div>
           <p class="notice notice-error" id="stats-error" role="alert" hidden></p>
           <div class="loading-state" id="stats-loading" role="status"><span class="spinner" aria-hidden="true"></span>Chargement des statistiques…</div>
           <div id="stats-content" hidden>
@@ -89,12 +94,13 @@
         </section>
 
         <section class="view" id="files-view" aria-labelledby="files-title" hidden>
-          <div class="page-heading"><div><p class="eyebrow">02 / VOTRE STOCKAGE PRIVÉ</p><h1 id="files-title" tabindex="-1">Tout, au même endroit<span>.</span></h1><p class="page-description">Déposez, retrouvez et téléchargez vos documents.</p></div><button class="button button-secondary icon-button" id="refresh-files" type="button" aria-label="Actualiser les fichiers"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg></button></div>
+          <div class="workspace-hero files-hero"><div class="hero-copy"><p class="eyebrow"><span class="eyebrow-dot"></span> 02 / BIBLIOTHÈQUE PRIVÉE</p><h1 id="files-title" tabindex="-1">Vos idées.<br><span>En lieu sûr.</span></h1><p class="page-description">Les documents qui comptent, dans un espace<br class="desktop-break"> qui vous appartient. Déposez. Retrouvez. Avancez.</p><div class="hero-chips"><span><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg>Accès privé</span><span>20 Mio par fichier</span></div></div><div class="hero-scene vault-scene" data-tilt aria-hidden="true"><div class="scene-grid"></div><div class="scene-tilt"><div class="scene-orbit orbit-one"></div><div class="scene-platform"></div><div class="floating-document document-back"><i></i><i></i><i></i></div><div class="floating-document document-front"><i></i><i></i><i></i></div><div class="folder-volume"><div class="folder-back"></div><div class="folder-side"></div><div class="folder-front"><svg class="icon"><use href="#icon-shield"/></svg><span>PERSONNEL</span></div></div><span class="scene-point point-one"></span><span class="scene-point point-two"></span></div><span class="scene-label">UN PEU D’ORDRE. BEAUCOUP D’ESPACE.</span></div></div>
+          <div class="section-toolbar"><div><span class="section-kicker">VOS DOCUMENTS</span><h2>Tout à sa place.</h2></div><button class="button button-secondary icon-button" id="refresh-files" type="button" aria-label="Actualiser les fichiers"><svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg></button></div>
           <div class="files-layout">
             <section class="panel upload-panel" aria-labelledby="upload-title">
               <div class="panel-heading"><h2 id="upload-title">Ajouter un fichier</h2><svg class="icon" aria-hidden="true"><use href="#icon-upload"/></svg></div>
               <form id="upload-form">
-                <div class="drop-zone" id="drop-zone"><svg class="upload-icon icon" aria-hidden="true"><use href="#icon-upload"/></svg><p>Glissez votre fichier ici</p><span class="drop-hint">ou sélectionnez-le sur votre appareil</span><label class="button button-secondary file-picker" for="file-input">Choisir un fichier<input id="file-input" name="file" type="file"></label><p class="file-limit">Un fichier à la fois · 20 Mio maximum</p></div>
+                <div class="drop-zone" id="drop-zone"><div class="upload-emblem" aria-hidden="true"><span></span><svg class="upload-icon icon"><use href="#icon-upload"/></svg></div><p>Glissez votre fichier ici</p><span class="drop-hint">ou sélectionnez-le sur votre appareil</span><label class="button button-secondary file-picker" for="file-input">Choisir un fichier<input id="file-input" name="file" type="file"></label><p class="file-limit">Un fichier à la fois · 20 Mio maximum</p></div>
                 <div class="selected-file" id="selected-file" hidden><svg class="icon" aria-hidden="true"><use href="#icon-file"/></svg><span><strong id="selected-name"></strong><small id="selected-size"></small></span><button class="text-button" type="button" id="clear-file" aria-label="Retirer le fichier sélectionné">×</button></div>
                 <button class="button button-primary upload-submit" id="upload-button" type="submit" disabled><svg class="icon" aria-hidden="true"><use href="#icon-upload"/></svg>Enregistrer le fichier</button>
                 <p class="upload-feedback" id="upload-feedback" role="status" aria-live="polite"></p>
@@ -102,12 +108,12 @@
               <div class="storage-note"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg><p>Vos fichiers restent privés. Leur téléchargement nécessite un accès administrateur.</p></div>
             </section>
             <div class="files-main">
-              <div class="storage-summary"><div><span class="summary-label">FICHIERS CHARGÉS</span><strong id="loaded-count">—</strong></div><div><span class="summary-label">TAILLE CUMULÉE</span><strong id="loaded-size">—</strong></div><p>Résumé des fichiers actuellement chargés dans la liste.</p></div>
-              <section class="panel file-list-panel" aria-labelledby="file-list-title"><div class="panel-heading"><h2 id="file-list-title" tabindex="-1">Mes fichiers</h2><span class="private-tag">PRIVÉ</span></div><p class="notice notice-error" id="files-error" role="alert" hidden></p><div class="loading-state" id="files-loading" role="status" hidden><span class="spinner" aria-hidden="true"></span>Chargement des fichiers…</div><div class="empty-state file-empty" id="files-empty" hidden><svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg><h3>Votre espace est prêt.</h3><p>Ajoutez un premier document pour le retrouver ici.</p></div><ul class="file-list" id="file-list" aria-label="Fichiers privés"></ul><button class="button button-secondary load-more" id="load-more" type="button" hidden>Charger plus de fichiers</button></section>
+              <div class="storage-summary"><div><span class="summary-label">FICHIERS CHARGÉS <svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg></span><strong id="loaded-count">—</strong></div><div><span class="summary-label">TAILLE CUMULÉE <svg class="icon" aria-hidden="true"><use href="#icon-chart"/></svg></span><strong id="loaded-size">—</strong></div><p>Résumé des fichiers actuellement chargés dans la liste.</p></div>
+              <section class="panel file-list-panel" aria-labelledby="file-list-title"><div class="panel-heading"><h2 id="file-list-title" tabindex="-1">Mes fichiers</h2><span class="private-tag"><span></span> PRIVÉ</span></div><div class="file-toolbar"><div class="search-field"><svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg><label class="sr-only" for="file-search">Rechercher parmi les fichiers chargés</label><input id="file-search" type="search" placeholder="Retrouver un document…" autocomplete="off"></div><label class="sr-only" for="file-sort">Trier les fichiers</label><select id="file-sort"><option value="newest">Plus récents</option><option value="oldest">Plus anciens</option><option value="name">Nom A → Z</option><option value="size">Plus volumineux</option></select></div><p class="file-results" id="file-results" role="status" aria-live="polite"></p><p class="notice notice-error" id="files-error" role="alert" hidden></p><div class="loading-state" id="files-loading" role="status" hidden><span class="spinner" aria-hidden="true"></span>Chargement des fichiers…</div><div class="empty-state file-empty" id="files-empty" hidden><svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg><h3>Votre espace est prêt.</h3><p>Ajoutez un premier document pour le retrouver ici.</p></div><ul class="file-list" id="file-list" aria-label="Fichiers privés"></ul><button class="button button-secondary load-more" id="load-more" type="button" hidden>Charger plus de fichiers</button></section>
             </div>
           </div>
         </section>
-        <footer class="page-footer"><span>Achraf Abderrazik <span class="footer-dot">/</span> Administration</span><span>Votre portfolio, côté coulisses.</span></footer>
+        <footer class="page-footer"><span><span class="footer-logo">a.</span> Achraf Abderrazik <span class="footer-dot">/</span> Le studio</span><span>Un espace pour les idées qui avancent. <span class="footer-star" aria-hidden="true">✳</span></span></footer>
       </main>
     </div>
     <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description"><form method="dialog"><span class="delete-symbol"><svg class="icon" aria-hidden="true"><use href="#icon-trash"/></svg></span><p class="eyebrow">SUPPRESSION DÉFINITIVE</p><h2 id="delete-title">Supprimer ce fichier ?</h2><p id="delete-description"></p><p class="dialog-warning">Cette action ne peut pas être annulée.</p><p class="notice notice-error" id="delete-error" role="alert" hidden></p><div class="dialog-actions"><button class="button button-secondary" id="cancel-delete" value="cancel" autofocus>Conserver</button><button class="button button-danger" id="confirm-delete" type="button">Supprimer</button></div></form></dialog>

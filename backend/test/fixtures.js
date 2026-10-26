@@ -52,6 +52,8 @@ export function createDatabase(schema) {
 
 export function createBucket() {
   const entries = new Map();
+  const multipartUploads = new Map();
+  let nextUploadId = 0;
 
   function metadata(entry) {
     return {
@@ -68,20 +70,84 @@ export function createBucket() {
     };
   }
 
+  function store(key, bytes, options = {}) {
+    const entry = {
+      key,
+      bytes,
+      uploaded: new Date(),
+      etag: createHash('sha256').update(bytes).digest('hex'),
+      httpMetadata: options.httpMetadata,
+      customMetadata: options.customMetadata,
+    };
+    entries.set(key, entry);
+    return metadata(entry);
+  }
+
+  function multipartHandle(key, uploadId) {
+    function activeUpload() {
+      const upload = multipartUploads.get(uploadId);
+      if (!upload || upload.key !== key) throw new Error('Multipart upload does not exist.');
+      return upload;
+    }
+
+    return {
+      key,
+      uploadId,
+      async uploadPart(partNumber, body) {
+        activeUpload();
+        if (!Number.isInteger(partNumber) || partNumber < 1 || partNumber > 10000) {
+          throw new Error('Invalid multipart part number.');
+        }
+        const bytes = new Uint8Array(await new Response(body).arrayBuffer());
+        const etag = createHash('sha256').update(bytes).digest('hex');
+        activeUpload().parts.set(partNumber, { bytes, etag });
+        return { partNumber, etag };
+      },
+      async complete(parts) {
+        const upload = activeUpload();
+        if (!Array.isArray(parts) || parts.length === 0) {
+          throw new Error('Multipart completion requires uploaded parts.');
+        }
+        let previousPartNumber = 0;
+        const selectedParts = parts.map((part) => {
+          const storedPart = upload.parts.get(part?.partNumber);
+          if (!storedPart || part.partNumber <= previousPartNumber || part.etag !== storedPart.etag) {
+            throw new Error('Multipart completion contains invalid or unordered parts.');
+          }
+          previousPartNumber = part.partNumber;
+          return storedPart;
+        });
+        const bytes = new Uint8Array(selectedParts.reduce((size, part) => size + part.bytes.byteLength, 0));
+        let offset = 0;
+        for (const part of selectedParts) {
+          bytes.set(part.bytes, offset);
+          offset += part.bytes.byteLength;
+        }
+        const result = store(key, bytes, upload.options);
+        multipartUploads.delete(uploadId);
+        return result;
+      },
+      async abort() {
+        activeUpload();
+        multipartUploads.delete(uploadId);
+      },
+    };
+  }
+
   return {
     entries,
+    multipartUploads,
     async put(key, body, options = {}) {
       const bytes = new Uint8Array(await new Response(body).arrayBuffer());
-      const entry = {
-        key,
-        bytes,
-        uploaded: new Date(),
-        etag: createHash('sha256').update(bytes).digest('hex'),
-        httpMetadata: options.httpMetadata,
-        customMetadata: options.customMetadata,
-      };
-      entries.set(key, entry);
-      return metadata(entry);
+      return store(key, bytes, options);
+    },
+    async createMultipartUpload(key, options = {}) {
+      const uploadId = `multipart-${++nextUploadId}`;
+      multipartUploads.set(uploadId, { key, options, parts: new Map() });
+      return multipartHandle(key, uploadId);
+    },
+    resumeMultipartUpload(key, uploadId) {
+      return multipartHandle(key, uploadId);
     },
     async get(key) {
       const entry = entries.get(key);

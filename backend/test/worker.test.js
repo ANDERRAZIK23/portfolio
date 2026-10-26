@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { exportJWK, generateKeyPair, SignJWT } from 'jose';
+import { exportJWK, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import worker, { parseCollectEvent, readLimitedBody, validateFileName, visitorIdentifier } from '../src/index.js';
 import { createBucket, createDatabase } from './fixtures.js';
 
@@ -10,6 +10,9 @@ const SITE_ORIGIN = 'https://imachraf.tech';
 const TEAM_DOMAIN = 'portfolio-tests.cloudflareaccess.com';
 const ADMIN_EMAIL = 'owner@example.com';
 const AUDIENCE = 'test-admin-audience';
+const FILE_UPLOAD_SECRET = 'a-test-upload-secret-with-at-least-thirty-two-characters';
+const UPLOAD_PART_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
 let privateKey;
 let validToken;
 let schema;
@@ -57,6 +60,7 @@ function environment(t) {
     ACCESS_TEAM_DOMAIN: TEAM_DOMAIN,
     ACCESS_AUD: AUDIENCE,
     ANALYTICS_SALT: 'a-test-secret-with-at-least-thirty-two-characters',
+    FILE_UPLOAD_SECRET,
   };
 }
 
@@ -75,7 +79,8 @@ async function fetchWorker(request, env) {
 
 test('every admin route requires a signed Access token, including assets and downloads', async (t) => {
   const env = environment(t);
-  for (const path of ['/', '/admin.js', '/api/session', '/api/stats', '/api/files', '/api/files/private.txt']) {
+  for (const path of ['/', '/admin.js', '/api/session', '/api/stats', '/api/files', '/api/files/private.txt',
+    '/api/uploads', '/api/uploads/parts/1', '/api/uploads/complete']) {
     const response = await fetchWorker(new Request(`${ADMIN_ORIGIN}${path}`), env);
     assert.equal(response.status, 401, path);
     assert.match(response.headers.get('cache-control'), /(?:^|,\s*)no-store(?:,|$)/, path);
@@ -220,6 +225,214 @@ test('unsafe names, malformed encoding and oversized uploads never enter private
   }), env);
   assert.equal(oversized.status, 413);
   assert.equal(env.FILES.entries.size, 0);
+});
+
+function uploadJsonRequest(path, value, options = {}) {
+  return adminRequest(path, {
+    method: 'POST',
+    ...options,
+    headers: { Origin: ADMIN_ORIGIN, 'Content-Type': 'application/json', ...options.headers },
+    body: JSON.stringify(value),
+  });
+}
+
+async function beginUpload(env, size, name = 'private.bin') {
+  const response = await fetchWorker(uploadJsonRequest('/api/uploads', { name, size }), env);
+  assert.equal(response.status, 201);
+  const upload = await response.json();
+  assert.equal(upload.partSize, UPLOAD_PART_SIZE);
+  assert.equal(upload.partCount, Math.ceil(size / UPLOAD_PART_SIZE));
+  assert.equal(typeof upload.token, 'string');
+  return upload;
+}
+
+function uploadPartRequest(upload, partNumber, body, options = {}) {
+  return adminRequest(`/api/uploads/parts/${partNumber}`, {
+    method: 'PUT',
+    ...options,
+    headers: { Origin: ADMIN_ORIGIN, 'X-Upload-Token': upload.token, ...options.headers },
+    body,
+  });
+}
+
+test('multipart uploads preserve ordered bytes and file metadata through completion and download', async (t) => {
+  const env = environment(t);
+  const finalBytes = new Uint8Array([0, 1, 128, 254, 255]);
+  const firstBytes = new Uint8Array(UPLOAD_PART_SIZE).fill(127);
+  const name = 'Fichier privé.bin';
+  const upload = await beginUpload(env, firstBytes.byteLength + finalBytes.byteLength, name);
+  const verified = await jwtVerify(upload.token, new TextEncoder().encode(FILE_UPLOAD_SECRET), {
+    algorithms: ['HS256'], issuer: ADMIN_ORIGIN, audience: 'portfolio-file-upload', subject: ADMIN_EMAIL,
+  });
+  assert.equal(verified.payload.size, firstBytes.byteLength + finalBytes.byteLength);
+  assert.match(verified.payload.key, /^files\/[0-9a-f-]{36}$/);
+  assert.equal(verified.payload.exp - verified.payload.iat, 2 * 60 * 60);
+  assert.equal(env.FILES.entries.size, 0);
+
+  const parts = [];
+  for (const [index, bytes] of [firstBytes, finalBytes].entries()) {
+    const response = await fetchWorker(uploadPartRequest(upload, index + 1, bytes), env);
+    assert.equal(response.status, 200);
+    const part = await response.json();
+    assert.equal(part.partNumber, index + 1);
+    assert.equal(typeof part.etag, 'string');
+    parts.push(part);
+  }
+  assert.deepEqual((await (await fetchWorker(adminRequest('/api/files'), env)).json()).files, []);
+
+  const invalidParts = [
+    [], [parts[0]], [parts[1], parts[0]], [parts[0], parts[0]],
+    [parts[0], { ...parts[1], etag: '' }],
+    [parts[0], { ...parts[1], etag: 'a'.repeat(257) }],
+    [parts[0], { ...parts[1], etag: 'unsafe\nheader' }],
+    [parts[0], { ...parts[1], etag: 'unsafe\u007fheader' }],
+  ];
+  for (const invalid of invalidParts) {
+    const response = await fetchWorker(uploadJsonRequest('/api/uploads/complete', { token: upload.token, parts: invalid }), env);
+    assert.equal(response.status, 400);
+    assert.equal(env.FILES.entries.size, 0);
+    assert.equal(env.FILES.multipartUploads.size, 1);
+  }
+
+  const response = await fetchWorker(uploadJsonRequest('/api/uploads/complete', { token: upload.token, parts }), env);
+  assert.equal(response.status, 201);
+  const created = await response.json();
+  assert.equal(created.key, verified.payload.key);
+  assert.equal(created.name, name);
+  assert.equal(created.size, firstBytes.byteLength + finalBytes.byteLength);
+  assert.ok(Number.isFinite(Date.parse(created.uploaded)));
+  assert.equal(env.FILES.multipartUploads.size, 0);
+  assert.deepEqual((await (await fetchWorker(adminRequest('/api/files'), env)).json()).files, [created]);
+  const download = await fetchWorker(adminRequest(`/api/files/${encodeURIComponent(created.key)}`), env);
+  assert.equal(download.status, 200);
+  const received = new Uint8Array(await download.arrayBuffer());
+  assert.deepEqual(received.subarray(0, firstBytes.byteLength), firstBytes);
+  assert.deepEqual(received.subarray(firstBytes.byteLength), finalBytes);
+  assert.equal(download.headers.get('content-length'), String(created.size));
+  assert.equal(download.headers.get('content-type'), 'application/octet-stream');
+});
+
+test('multipart initialization accepts the 200 MiB boundary and rejects invalid sizes or names before creating storage', async (t) => {
+  const env = environment(t);
+  for (const size of [1, UPLOAD_PART_SIZE, MAX_FILE_SIZE]) {
+    const upload = await beginUpload(env, size);
+    const aborted = await fetchWorker(adminRequest('/api/uploads', {
+      method: 'DELETE', headers: { Origin: ADMIN_ORIGIN, 'X-Upload-Token': upload.token },
+    }), env);
+    assert.equal(aborted.status, 204);
+  }
+  for (const size of [0, -1, 1.5, '100', null, Number.MAX_SAFE_INTEGER + 1]) {
+    const response = await fetchWorker(uploadJsonRequest('/api/uploads', { name: 'file.bin', size }), env);
+    assert.equal(response.status, 400, String(size));
+  }
+  const tooLarge = await fetchWorker(uploadJsonRequest('/api/uploads', { name: 'file.bin', size: MAX_FILE_SIZE + 1 }), env);
+  assert.equal(tooLarge.status, 413);
+  for (const name of ['../secret.bin', 'folder/file.bin', '.', 'unsafe\r\nname', 'a'.repeat(181)]) {
+    const response = await fetchWorker(uploadJsonRequest('/api/uploads', { name, size: 1 }), env);
+    assert.equal(response.status, 400, name);
+  }
+  assert.equal(env.FILES.multipartUploads.size, 0);
+  assert.equal(env.FILES.entries.size, 0);
+});
+
+test('multipart parts must fit the exact declared file size and part range', async (t) => {
+  const env = environment(t);
+  const upload = await beginUpload(env, UPLOAD_PART_SIZE + 5);
+  const invalidParts = [
+    { number: 3, body: new Uint8Array(5), status: 400 },
+    { number: 1, body: new Uint8Array(5), status: 400 },
+    { number: 2, body: new Uint8Array(4), status: 400 },
+    { number: 2, body: new Uint8Array(6), status: 413 },
+  ];
+  for (const part of invalidParts) {
+    const response = await fetchWorker(uploadPartRequest(upload, part.number, part.body), env);
+    assert.equal(response.status, part.status);
+  }
+  const oversizedHeader = await fetchWorker(uploadPartRequest(upload, 1, 'x', {
+    headers: { 'Content-Length': String(UPLOAD_PART_SIZE + 1) },
+  }), env);
+  assert.equal(oversizedHeader.status, 413);
+  assert.equal([...env.FILES.multipartUploads.values()][0].parts.size, 0);
+  assert.equal(env.FILES.entries.size, 0);
+});
+
+test('multipart abort discards uploaded parts without creating a file', async (t) => {
+  const env = environment(t);
+  const upload = await beginUpload(env, 3);
+  assert.equal((await fetchWorker(uploadPartRequest(upload, 1, 'abc'), env)).status, 200);
+  const response = await fetchWorker(adminRequest('/api/uploads', {
+    method: 'DELETE', headers: { Origin: ADMIN_ORIGIN, 'X-Upload-Token': upload.token },
+  }), env);
+  assert.equal(response.status, 204);
+  assert.equal(env.FILES.multipartUploads.size, 0);
+  assert.equal(env.FILES.entries.size, 0);
+});
+
+test('every multipart mutation requires both Access authentication and the administration origin', async (t) => {
+  const env = environment(t);
+  const upload = await beginUpload(env, 1);
+  const routes = [
+    { path: '/api/uploads', method: 'POST', body: JSON.stringify({ name: 'file.bin', size: 1 }) },
+    { path: '/api/uploads/parts/1', method: 'PUT', body: 'x' },
+    { path: '/api/uploads/complete', method: 'POST', body: JSON.stringify({ token: upload.token, parts: [] }) },
+    { path: '/api/uploads', method: 'DELETE' },
+  ];
+  for (const route of routes) {
+    const unauthenticated = await fetchWorker(new Request(`${ADMIN_ORIGIN}${route.path}`, {
+      method: route.method, body: route.body,
+      headers: { Origin: ADMIN_ORIGIN, 'Content-Type': 'application/json', 'X-Upload-Token': upload.token },
+    }), env);
+    assert.equal(unauthenticated.status, 401);
+    for (const origin of [undefined, 'https://attacker.example', SITE_ORIGIN]) {
+      const headers = { 'Content-Type': 'application/json', 'X-Upload-Token': upload.token };
+      if (origin) headers.Origin = origin;
+      const response = await fetchWorker(adminRequest(route.path, { method: route.method, body: route.body, headers }), env);
+      assert.equal(response.status, 403, `${route.method} ${route.path} ${origin}`);
+    }
+  }
+  assert.equal(env.FILES.multipartUploads.size, 1);
+  assert.equal(env.FILES.entries.size, 0);
+});
+
+test('multipart tokens reject tampering, expiry, another owner and another administration origin', async (t) => {
+  const env = environment(t);
+  const upload = await beginUpload(env, 1);
+  const secret = new TextEncoder().encode(FILE_UPLOAD_SECRET);
+  const { payload } = await jwtVerify(upload.token, secret);
+  const now = Math.floor(Date.now() / 1000);
+  const expired = await new SignJWT({ key: payload.key, uploadId: payload.uploadId, size: payload.size })
+    .setProtectedHeader({ alg: 'HS256' }).setIssuer(ADMIN_ORIGIN).setAudience('portfolio-file-upload')
+    .setSubject(ADMIN_EMAIL).setIssuedAt(now - 600).setExpirationTime(now - 60).sign(secret);
+  const segments = upload.token.split('.');
+  segments[1] = Buffer.from(JSON.stringify({ ...payload, size: 2 })).toString('base64url');
+  for (const invalidToken of [undefined, 'not-a-jwt', expired, segments.join('.')]) {
+    const response = await fetchWorker(uploadPartRequest({ token: invalidToken ?? '' }, 1, 'x'), env);
+    assert.equal(response.status, 400);
+    assert.match(response.headers.get('cache-control'), /no-store/);
+  }
+  const otherEmail = 'another-owner@example.com';
+  const otherOwner = await fetchWorker(uploadPartRequest(upload, 1, 'x', {
+    token: await token({ email: otherEmail }),
+  }), { ...env, ADMIN_EMAIL: otherEmail });
+  assert.equal(otherOwner.status, 400);
+  const otherOrigin = 'https://another-admin.example.com';
+  const moved = await fetchWorker(new Request(`${otherOrigin}/api/uploads/parts/1`, {
+    method: 'PUT', body: 'x',
+    headers: { Origin: otherOrigin, 'Cf-Access-Jwt-Assertion': validToken, 'X-Upload-Token': upload.token },
+  }), env);
+  assert.equal(moved.status, 400);
+  assert.equal([...env.FILES.multipartUploads.values()][0].parts.size, 0);
+});
+
+test('multipart uploads fail explicitly when their signing secret is missing or too short', async (t) => {
+  const env = environment(t);
+  for (const secret of [undefined, 'short-secret']) {
+    const response = await fetchWorker(uploadJsonRequest('/api/uploads', { name: 'file.bin', size: 1 }), {
+      ...env, FILE_UPLOAD_SECRET: secret,
+    });
+    assert.equal(response.status, 503);
+  }
+  assert.equal(env.FILES.multipartUploads.size, 0);
 });
 
 function collectRequest(event = { path: '/work?email=private@example.com#secret', referrer: 'https://google.com/search?q=private' }, options = {}) {

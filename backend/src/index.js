@@ -1,7 +1,10 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, jwtVerify, SignJWT } from 'jose';
 
 const COLLECT_BODY_LIMIT = 2_048;
 const FILE_BODY_LIMIT = 20 * 1024 * 1024;
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
+const UPLOAD_PART_SIZE = 10 * 1024 * 1024;
+const UPLOAD_AUDIENCE = 'portfolio-file-upload';
 const FILE_KEY = /^files\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const BOT_AGENT = /bot\b|spider|crawler|headless|slurp|bingpreview|facebookexternalhit|uptimerobot|lighthouse|pagespeed|curl\/|wget\//i;
 const jwksByIssuer = new Map();
@@ -345,6 +348,124 @@ function requireSameOrigin(request, url) {
   }
 }
 
+function uploadSecret(env) {
+  if (typeof env.FILE_UPLOAD_SECRET !== 'string' || env.FILE_UPLOAD_SECRET.length < 32) {
+    throw new HttpError(503, 'The file upload secret has not been configured.');
+  }
+  return encoder.encode(env.FILE_UPLOAD_SECRET);
+}
+
+async function uploadJson(request) {
+  if (request.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
+    throw new HttpError(415, 'Upload metadata must use application/json.');
+  }
+  const body = await readLimitedBody(request, 16_384);
+  let value;
+  try {
+    value = JSON.parse(new TextDecoder().decode(body));
+  } catch {
+    throw new HttpError(400, 'Upload metadata must be valid JSON.');
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new HttpError(400, 'Provide an upload metadata object.');
+  }
+  return value;
+}
+
+async function verifyUploadToken(token, env, url, session) {
+  const secret = uploadSecret(env);
+  if (typeof token !== 'string' || !token || token.length > 8_192) {
+    throw new HttpError(400, 'Provide a valid file upload token.');
+  }
+  let payload;
+  try {
+    ({ payload } = await jwtVerify(token, secret, {
+      algorithms: ['HS256'],
+      audience: UPLOAD_AUDIENCE,
+      issuer: url.origin,
+      subject: session.email.toLowerCase(),
+      requiredClaims: ['exp', 'iat', 'sub'],
+    }));
+  } catch {
+    throw new HttpError(400, 'The file upload token is invalid or expired.');
+  }
+  if (typeof payload.key !== 'string' || !FILE_KEY.test(payload.key)
+    || typeof payload.uploadId !== 'string' || !payload.uploadId || payload.uploadId.length > 2_048
+    || !Number.isSafeInteger(payload.size) || payload.size <= 0 || payload.size > MAX_FILE_SIZE) {
+    throw new HttpError(400, 'The file upload token contains invalid metadata.');
+  }
+  return payload;
+}
+
+async function uploads(request, url, env, session) {
+  requireSameOrigin(request, url);
+  const storage = bucket(env);
+  if (typeof storage.createMultipartUpload !== 'function' || typeof storage.resumeMultipartUpload !== 'function') {
+    throw new HttpError(503, 'Multipart file storage has not been configured.');
+  }
+  if (url.pathname === '/api/uploads' && request.method === 'POST') {
+    const secret = uploadSecret(env);
+    const value = await uploadJson(request);
+    const name = validateFileName(value.name);
+    if (!Number.isSafeInteger(value.size) || value.size <= 0) {
+      throw new HttpError(400, 'The file size must be a positive integer.');
+    }
+    if (value.size > MAX_FILE_SIZE) throw new HttpError(413, 'Files must not exceed 200 MiB.');
+    const key = `files/${crypto.randomUUID()}`;
+    const upload = await storage.createMultipartUpload(key, {
+      httpMetadata: { contentType: 'application/octet-stream' },
+      customMetadata: { name },
+    });
+    const token = await new SignJWT({ key, uploadId: upload.uploadId, size: value.size })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer(url.origin)
+      .setAudience(UPLOAD_AUDIENCE)
+      .setSubject(session.email.toLowerCase())
+      .setIssuedAt()
+      .setExpirationTime('2h')
+      .sign(secret);
+    return json({ token, partSize: UPLOAD_PART_SIZE, partCount: Math.ceil(value.size / UPLOAD_PART_SIZE) }, 201);
+  }
+  const partMatch = /^\/api\/uploads\/parts\/([1-9]\d*)$/.exec(url.pathname);
+  if (partMatch && request.method === 'PUT') {
+    const payload = await verifyUploadToken(request.headers.get('X-Upload-Token'), env, url, session);
+    const partNumber = Number(partMatch[1]);
+    const partCount = Math.ceil(payload.size / UPLOAD_PART_SIZE);
+    if (!Number.isSafeInteger(partNumber) || partNumber > partCount) {
+      throw new HttpError(400, 'The upload part number is out of range.');
+    }
+    const expectedSize = Math.min(UPLOAD_PART_SIZE, payload.size - (partNumber - 1) * UPLOAD_PART_SIZE);
+    const body = await readLimitedBody(request, expectedSize);
+    if (body.byteLength !== expectedSize) throw new HttpError(400, 'The upload part has an incorrect size.');
+    const upload = storage.resumeMultipartUpload(payload.key, payload.uploadId);
+    return json(await upload.uploadPart(partNumber, body));
+  }
+  if (url.pathname === '/api/uploads/complete' && request.method === 'POST') {
+    const value = await uploadJson(request);
+    const payload = await verifyUploadToken(value.token, env, url, session);
+    const partCount = Math.ceil(payload.size / UPLOAD_PART_SIZE);
+    if (!Array.isArray(value.parts) || value.parts.length !== partCount
+      || value.parts.some((part, index) => !part || part.partNumber !== index + 1
+        || typeof part.etag !== 'string' || !part.etag || part.etag.length > 256 || /[\u0000-\u001f\u007f]/.test(part.etag))) {
+      throw new HttpError(400, 'Provide every uploaded part once, in ascending order.');
+    }
+    const upload = storage.resumeMultipartUpload(payload.key, payload.uploadId);
+    const object = await upload.complete(value.parts.map(({ partNumber, etag }) => ({ partNumber, etag })));
+    if (!object) throw new Error('Private file storage did not confirm the completed upload.');
+    if (object.size !== payload.size) {
+      await storage.delete(payload.key);
+      throw new Error('The completed upload size did not match its declared size.');
+    }
+    return json(fileMetadata(object), 201);
+  }
+  if (url.pathname === '/api/uploads' && request.method === 'DELETE') {
+    const payload = await verifyUploadToken(request.headers.get('X-Upload-Token'), env, url, session);
+    await storage.resumeMultipartUpload(payload.key, payload.uploadId).abort();
+    return new Response(null, { status: 204 });
+  }
+  throw new HttpError(404, 'The requested upload route was not found.');
+}
+
 async function files(request, url, env) {
   if (request.method === 'POST' || request.method === 'DELETE') requireSameOrigin(request, url);
   const storage = bucket(env);
@@ -417,6 +538,9 @@ async function admin(request, url, env, authenticateRequest) {
   if (url.pathname === '/api/stats' && request.method === 'GET') return json(await getStats(url, env));
   if (url.pathname === '/api/files' || url.pathname.startsWith('/api/files/')) {
     return files(request, url, env);
+  }
+  if (url.pathname === '/api/uploads' || url.pathname.startsWith('/api/uploads/')) {
+    return uploads(request, url, env, session);
   }
   if (url.pathname.startsWith('/api/')) throw new HttpError(404, 'The requested API route was not found.');
   if (!['GET', 'HEAD'].includes(request.method)) {

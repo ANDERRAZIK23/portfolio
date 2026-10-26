@@ -1,7 +1,8 @@
 'use strict';
 
 (() => {
-  const MAX_FILE_SIZE = 20 * 1024 * 1024;
+  const MAX_FILE_SIZE = 200 * 1024 * 1024;
+  const SINGLE_UPLOAD_MAX_SIZE = 20 * 1024 * 1024;
   const numberFormat = new Intl.NumberFormat('fr-FR');
   const countryFormat = new Intl.DisplayNames(['fr'], { type: 'region' });
   const dayFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -343,7 +344,7 @@
     uploadFeedback('');
     if (file && file.size > MAX_FILE_SIZE) {
       clearFile();
-      uploadFeedback('Ce fichier dépasse la limite de 20 Mio. Choisissez un fichier plus petit.', true);
+      uploadFeedback('Ce fichier dépasse la limite de 200 Mio. Choisissez un fichier plus petit.', true);
       return;
     }
     state.selectedFile = file;
@@ -358,6 +359,53 @@
     selectFile(null);
   }
 
+  async function uploadMultipartFile(file) {
+    let token = null;
+    try {
+      const upload = await request('/api/uploads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: file.name, size: file.size }),
+      });
+      if (typeof upload.token === 'string' && upload.token) token = upload.token;
+      if (!token || !Number.isSafeInteger(upload.partSize) || upload.partSize <= 0 || upload.partSize > SINGLE_UPLOAD_MAX_SIZE
+        || upload.partCount !== Math.ceil(file.size / upload.partSize)) {
+        throw new ApiError('Le serveur a renvoyé une configuration de téléversement invalide.', 502);
+      }
+      const parts = [];
+      uploadFeedback(`Téléversement : 0 octet sur ${formatBytes(file.size)} · 0/${upload.partCount} parties. Ne fermez pas cette page.`);
+      for (let partNumber = 1; partNumber <= upload.partCount; partNumber += 1) {
+        const start = (partNumber - 1) * upload.partSize;
+        const end = Math.min(start + upload.partSize, file.size);
+        const part = await request(`/api/uploads/parts/${partNumber}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/octet-stream', 'X-Upload-Token': token },
+          body: file.slice(start, end),
+        });
+        if (part.partNumber !== partNumber || typeof part.etag !== 'string' || !part.etag) {
+          throw new ApiError('Le serveur n’a pas confirmé la réception d’une partie du fichier.', 502);
+        }
+        parts.push({ partNumber, etag: part.etag });
+        uploadFeedback(`Téléversement : ${formatBytes(end)} sur ${formatBytes(file.size)} · ${partNumber}/${upload.partCount} parties. Ne fermez pas cette page.`);
+      }
+      uploadFeedback(`${formatBytes(file.size)} transférés · Finalisation du fichier… Ne fermez pas cette page.`);
+      return await request('/api/uploads/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, parts }),
+      });
+    } catch (error) {
+      if (token) {
+        try {
+          await request('/api/uploads', { method: 'DELETE', headers: { 'X-Upload-Token': token } });
+        } catch (cleanupError) {
+          throw new ApiError(`${errorMessage(error)} Le nettoyage du téléversement incomplet a aussi échoué : ${errorMessage(cleanupError)}`, 502);
+        }
+      }
+      throw error;
+    }
+  }
+
   async function uploadFile(event) {
     event.preventDefault();
     if (!state.authenticated || !state.selectedFile || state.uploadBusy || state.filesBusy || state.deleteBusy) return;
@@ -367,14 +415,20 @@
     $('upload-button').setAttribute('aria-busy', 'true');
     uploadFeedback('Enregistrement en cours… Ne fermez pas cette page.');
     try {
-      await request('/api/files', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-File-Name': encodeURIComponent(file.name) }, body: file });
+      if (file.size <= SINGLE_UPLOAD_MAX_SIZE) {
+        await request('/api/files', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-File-Name': encodeURIComponent(file.name) }, body: file });
+      } else {
+        await uploadMultipartFile(file);
+      }
       if (!state.authenticated) return;
       state.uploadBusy = false;
       clearFile();
       uploadFeedback(`« ${file.name} » a été enregistré.`);
       await loadFiles(false);
     } catch (error) {
-      uploadFeedback(errorMessage(error), true);
+      const message = errorMessage(error);
+      uploadFeedback(message, true);
+      if (!state.authenticated) $('gate-message').textContent = message;
     } finally {
       state.uploadBusy = false;
       $('upload-button').removeAttribute('aria-busy');

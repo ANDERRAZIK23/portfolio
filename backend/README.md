@@ -5,7 +5,9 @@ Le portfolio reste sur GitHub Pages. Ce service Cloudflare héberge une administ
 ## Fonctionnement
 
 - Cloudflare Access gère la connexion par code e-mail. Le Worker vérifie aussi la signature JWT, l’émetteur, l’audience et l’adresse e-mail autorisée avant de servir toute page, statistique ou pièce jointe.
-- Les fichiers restent dans un bucket privé. Téléversement, téléchargement et suppression passent par le Worker authentifié. Taille maximale : 20 Mio par fichier. Aucun jeton S3 ne passe dans le navigateur ni dans le dépôt.
+- Les fichiers restent dans un bucket privé. Téléversement, téléchargement et suppression passent par le Worker authentifié. Taille maximale : 200 Mio par fichier (209 715 200 octets). Aucun jeton S3 ne passe dans le navigateur ni dans le dépôt.
+- Au-delà de 20 Mio, le navigateur envoie le fichier en parties de 10 Mio, puis demande leur assemblage dans R2. Chaque requête reste ainsi sous la limite du proxy Cloudflare et le Worker ne charge pas le fichier entier en mémoire. La progression indique uniquement les parties confirmées par le serveur. En cas d’échec, l’administration demande l’abandon du téléversement incomplet et signale aussi toute erreur de nettoyage. Ce fonctionnement et la limite de 200 Mio sont identiques en local et en production.
+- Une session de téléversement expire après deux heures. Garder la page ouverte jusqu’à la confirmation. Si le navigateur se ferme, R2 [abandonne par défaut les téléversements incomplets après sept jours](https://developers.cloudflare.com/r2/objects/upload-objects/#incomplete-upload-lifecycles) ; conserver cette règle de nettoyage dans le bucket.
 - La collecte publique accepte uniquement l’origine du portfolio. Elle enregistre le chemin sans paramètres, le domaine référent, le pays et le type d’appareil. Elle n’enregistre ni adresse IP brute, ni nom de visiteur, ni user-agent brut. Un HMAC de l’IP change chaque jour UTC ; il permet une estimation des visiteurs uniques **par jour**, pas des personnes uniques sur une période. Plusieurs personnes partageant une IP peuvent être regroupées.
 - La collecte respecte Do Not Track et Global Privacy Control. Les robots courants sont exclus. Les compteurs restent indicatifs : blocages, robots non reconnus, IP partagées et requêtes forgées peuvent influencer les mesures. La limitation de débit atténue les abus ; l’origine CORS ne prouve pas l’authenticité d’une requête extérieure au navigateur.
 - Conservation des statistiques : 90 jours UTC, avec suppression quotidienne planifiée. Aucune mesure rétroactive des anciennes visites.
@@ -61,6 +63,7 @@ Les adresses `workers.dev` et les URL de preview sont désactivées. Même en ca
 ```sh
 npm run db:migrate
 openssl rand -hex 32 | npx wrangler secret put ANALYTICS_SALT
+openssl rand -hex 32 | npx wrangler secret put FILE_UPLOAD_SECRET
 npm run deploy
 ```
 
@@ -85,7 +88,7 @@ Ajouter éventuellement un lien personnel vers l’administration ; son URL ne c
 
 L’entrée de développement `src/local.js` propose un formulaire de connexion avec une session signée de six heures, stockée dans un cookie HttpOnly et SameSite=Strict et accepte uniquement l’origine `http://127.0.0.1:8787`. Elle utilise une base D1 et un bucket R2 locaux, indépendants des fichiers et statistiques de production.
 
-Créer `.dev.vars` dans ce dossier (fichier ignoré par Git) avec `ADMIN_EMAIL`, `LOCAL_ADMIN_PASSWORD` (au moins 24 caractères aléatoires) et `ANALYTICS_SALT` (au moins 32 caractères aléatoires). Ne pas partager ce fichier.
+Créer `.dev.vars` dans ce dossier (fichier ignoré par Git) avec `ADMIN_EMAIL`, `LOCAL_ADMIN_PASSWORD` (au moins 24 caractères aléatoires), `ANALYTICS_SALT` et `FILE_UPLOAD_SECRET` (au moins 32 caractères aléatoires chacun, avec des valeurs distinctes). `FILE_UPLOAD_SECRET` signe les sessions de téléversement multiparties. Ne pas partager ce fichier.
 
 ```sh
 npm run db:migrate:local
